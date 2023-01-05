@@ -10,6 +10,7 @@ void sp_load(struct SongPlayer* player, FilePlayer* song, float bpm, float offse
   player->bpm = bpm;
   player->sec_per_beat = 60 / bpm;
   player->offset = offset;
+  player->length = player->pd->sound->fileplayer->getLength(player->current_song) / 2.0f - player->offset;
 }
 
 void sp_play(struct SongPlayer* player, FilePlayer* song, float bpm, float offset) {

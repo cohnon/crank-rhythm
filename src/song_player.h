@@ -6,6 +6,7 @@
 struct SongPlayer {
   PlaydateAPI* pd;
   float bpm;
+  float length;
   float sec_per_beat;
   FilePlayer* current_song;
   float start_tick;
