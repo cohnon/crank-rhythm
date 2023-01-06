@@ -26,8 +26,6 @@
 
 #define NOTE_BLACK 0
 #define NOTE_WHITE 1
-#define NOTE_GREY 2
-#define NOTE_STRIPES 3
 
 struct Note {
   uint8_t type;

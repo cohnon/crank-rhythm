@@ -167,26 +167,13 @@ void song_draw(struct GameData* data) {
 		
 		// playdate->graphics->drawBitmap(note_bitmap, (int)x - 12, (int)y - 12, kBitmapUnflipped);
 
-    switch (note->color) {
-      case NOTE_STRIPES:
-        data->playdate->graphics->setStencilImage(data->stripe_bitmap, 1);
-        break;
-      case NOTE_GREY:
-        data->playdate->graphics->setStencilImage(data->grey_bitmap, 1);
-        break;
-      default:
-        break;
-    }
-    
 		int note_size = 16;
     if (note->color == NOTE_WHITE) {
-      data->playdate->graphics->setStencilImage(data->clear_bitmap, 1);
       data->playdate->graphics->drawEllipse(x - (note_size >> 1), y - (note_size >> 1), note_size, note_size, 1, 0.0f, 0.0f, kColorBlack);
     } else {      
   		data->playdate->graphics->fillEllipse(x - (note_size >> 1), y - (note_size >> 1), note_size, note_size, 0.0f, 0.0f, kColorBlack);
     }
     
-    data->playdate->graphics->setStencilImage(data->clear_bitmap, 1);
     if (note->type == NOTE_CLICK) {
 		  data->playdate->graphics->drawEllipse(x - (note_size >> 1) - 6, y - (note_size >> 1) - 6, note_size + 12, note_size + 12, 2, 0.0f, 0.0f, kColorBlack);
 		}

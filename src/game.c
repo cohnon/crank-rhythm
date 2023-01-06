@@ -231,19 +231,14 @@ static void draw_disk() {
 	int offset = (DISK_SIZE_MAX - size) / 2;
 	int bounds_x = 400 / 2 - DISK_SIZE_MAX / 2;
 	int bounds_y = 240 / 2 - DISK_SIZE_MAX / 2;
-	  
-	// clear
+
 	data.playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, 0.0f, 0.0f, kColorWhite);
-	// stripe
-	data.playdate->graphics->setStencilImage(data.grey_bitmap, 1);
-	data.playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, angle + 0.0f, angle + 90.0f, kColorBlack);
-	// grey
-	data.playdate->graphics->setStencilImage(data.stripe_bitmap, 1);
-	data.playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, angle + 180.0f, angle + 270.0f, kColorBlack);
+
 	// white
-	data.playdate->graphics->setStencilImage(data.clear_bitmap, 1);
-	data.playdate->graphics->drawEllipse(bounds_x + offset, bounds_y + offset, size, size, 2, angle + 90.0f, angle + 180.0f, kColorBlack);
+	data.playdate->graphics->drawEllipse(bounds_x + offset, bounds_y + offset, size, size, 2, angle + 0.0f, angle + 90.0f, kColorBlack);
+	data.playdate->graphics->drawEllipse(bounds_x + offset, bounds_y + offset, size, size, 2, angle + 180.0f, angle + 270.0f, kColorBlack);
 	// black
 	data.playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, angle + 270.0f, angle + 360.0f, kColorBlack);
+	data.playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, angle + 90.0f, angle + 180.0f, kColorBlack);
 }
 
