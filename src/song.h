@@ -9,8 +9,8 @@
 
 #define NOTE_NORMAL 0
 #define NOTE_CLICK 1
-#define NOTE_HELD 2
-#define NOTE_DANGER 3
+#define NOTE_DANGER 2
+#define NOTE_HELD 3
 #define NOTE_SPIN 4
 
 #define NOTE_POS_L1 0x0

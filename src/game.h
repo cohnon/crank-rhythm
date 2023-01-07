@@ -13,10 +13,10 @@
 struct GameData {
   uint8_t state;
   uint8_t first_update;
+  uint32_t frame;
   PlaydateAPI* playdate;
-  LCDBitmap* clear_bitmap;
-  LCDBitmap* grey_bitmap;
-  LCDBitmap* stripe_bitmap;
+  LCDBitmap* black_x_bitmap;
+  LCDBitmap* white_x_bitmap;
   struct SongPlayer song_player;
 };
 

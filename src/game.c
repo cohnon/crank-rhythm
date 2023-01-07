@@ -15,7 +15,7 @@ struct GameData data;
 const char* fontpath = "/System/Fonts/Asheville-Sans-14-Bold.pft";
 LCDFont* font = NULL;
 
-LCDBitmap* x_bitmap = NULL;
+LCDBitmap* bg_tile_bitmap = NULL;
 
 int map_select;
 int map_index;
@@ -34,6 +34,14 @@ static void get_song(const char* filename, void* userdata) {
 static void update_main_menu() {
 	if (data.first_update) {
 		data.first_update = 0;
+		data.playdate->graphics->tileBitmap(bg_tile_bitmap, 0, 0, 400, 240, kBitmapUnflipped);
+		data.playdate->graphics->drawText("4Tune", 5, kASCIIEncoding, 200, 120);
+		data.playdate->graphics->drawText("press any button", 16, kASCIIEncoding, 200, 150);
+	}
+	
+	if (data.frame % 4 == 0) {
+		int offset = -32 + ((data.frame >> 2) % 32);
+		data.playdate->graphics->tileBitmap(bg_tile_bitmap, offset, offset, 432, 262, kBitmapUnflipped);
 		data.playdate->graphics->drawText("4Tune", 5, kASCIIEncoding, 200, 120);
 		data.playdate->graphics->drawText("press any button", 16, kASCIIEncoding, 200, 150);
 	}
@@ -155,15 +163,10 @@ void game_init() {
 	font = data.playdate->graphics->loadFont(fontpath, &err);
 	data.playdate->graphics->setFont(font);
 
-	data.grey_bitmap = data.playdate->graphics->loadBitmap("grey.png", &err);
-	data.stripe_bitmap = data.playdate->graphics->loadBitmap("stripe.png", &err);
-	data.clear_bitmap = data.playdate->graphics->newBitmap(32, 32, kColorWhite);
-	x_bitmap = data.playdate->graphics->loadBitmap("x.png", &err);
-	
-	if (data.grey_bitmap == NULL || data.stripe_bitmap == NULL || data.clear_bitmap == NULL) {
-		data.playdate->system->logToConsole("UH OH");
-	}
-	
+	data.black_x_bitmap = data.playdate->graphics->loadBitmap("x.png", &err);
+	data.white_x_bitmap = data.playdate->graphics->loadBitmap("white_x.png", &err);
+	bg_tile_bitmap = data.playdate->graphics->loadBitmap("bg-tiles.png", &err);
+		
 	data.playdate->file->listfiles("songs", get_song, NULL, 0);
   
 	// song_open(pd, &song_player, "song.4t");
@@ -187,9 +190,11 @@ void game_update() {
 			}
 			update_song();
 			break;
-	}	
+	}
+	
+	data.frame += 1;
 
-	data.playdate->system->drawFPS(0,20);
+	data.playdate->system->drawFPS(0, 0);
 }
 
 static void draw_disk() {
