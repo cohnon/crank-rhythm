@@ -7,10 +7,12 @@
 #include "pd_api.h"
 #include <stdint.h>
 
+#define SONG_STATE_WON 0
+
 #define NOTE_NORMAL 0
 #define NOTE_CLICK 1
 #define NOTE_DANGER 2
-#define NOTE_HELD 3
+#define NOTE_SLIDER 3
 #define NOTE_SPIN 4
 
 #define NOTE_POS_L1 0x0
@@ -27,28 +29,37 @@
 #define NOTE_BLACK 0
 #define NOTE_WHITE 1
 
+#define MAX_HEALTH 100
+
 struct Note {
   uint8_t type;
-  uint8_t position;
 	uint8_t color;
+  uint8_t position;
+	uint8_t extra_data; // just to fill out the padding why not
   float beat_time;
 	float time;
-  float end; // for held notes, spin notes, etc
 };
 
 struct Song {
+	int state;
 	char name[26];
 	int index;
+	int score;
+	int health;
 	int miss_count;
 	int ok_count;
 	int good_count;
 	int perfect_count;
 	int note_count;
+	int combo;
+	float accuracy;
 	struct Note notes[1000];
 };
 
+void song_set_data_ptr(struct GameData* data);
 void song_open(PlaydateAPI* playdate, struct SongPlayer* song_player, const char* path);
-void song_update(PlaydateAPI* playdate, struct SongPlayer* song_player);
+void song_close(struct GameData* data);
+void song_update(struct GameData* data);
 void song_draw(struct GameData* data);
 
 #endif

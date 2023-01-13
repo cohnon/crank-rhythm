@@ -1,5 +1,6 @@
-name=Hello World C
-author=Dave Hayden
-description=A small demo of the C API
-bundleID=com.panic.hellocapi
+name=4Tune Rhythm
+author=Coherent Nonsense
+description=A spinny rhythm game
+bundleID=com.cohnon.4tune
 imagePath=
+version=0.0.0

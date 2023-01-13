@@ -1,16 +1,120 @@
 #include "song.h"
+#include "pd_api/pd_api_gfx.h"
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <assert.h>
 
-// HACK allow player to set this
-#define SIGHTREAD_DISTANCE 3
+#define DISK_SIZE 64
+#define DISK_SIZE_MAX 74
+
+// TODO Make sightreading based on time not beat time
+#define SIGHTREAD_DISTANCE (3.0f / 170.0)
 
 struct Song level;
-int score;
+
+int display_score;
+
+float prompt_ease;
+int prompt_show;
+int prompt;
+
+// sin values [0, 2pi]
+float health_shake[11] = {0, 2, 4, 4, 2, 0, -3, -5, -5, -3, 0};
+int missed;
+int health_shake_index = 10;
+
+struct Particle {
+	uint16_t x;
+	uint16_t y;
+	uint32_t life;
+};
+
+int particle_start;
+int particle_end;
+struct Particle particles[10];
+int pulses[10];
+
+static void particles_update() {
+	for (int i = particle_start; i != particle_end; i = (i + 1) % 10) {
+		particles[i].life += 1;
+		pulses[i] += 1;
+		if (particles[i].life > 15) {
+			particle_start += 1;
+			particle_start %= 10;
+		}
+	}
+}
+
+static void particles_draw(struct GameData* data) {
+	for (int i = particle_start; i != particle_end; i = (i + 1) % 10) {
+		struct Particle* p = &particles[i];
+		// data->playdate->graphics->drawRect(p->x - p->life / 2, p->y - p->life / 2, p->life, p->life, kColorBlack);
+		// data->playdate->graphics->drawRect(p->x - p->life / 2 - 1, p->y - p->life / 2 - 1, p->life + 2, p->life + 2, kColorWhite);
+		data->playdate->graphics->drawEllipse(200 - 32 - pulses[i] / 2, 120 - 32 - pulses[i] / 2, 64 + pulses[i], 64 + pulses[i], 1, 0.0f, 0.0f, kColorBlack);
+	}
+}
+
+static void particles_make(uint16_t x, uint16_t y) {
+	particles[particle_end] = (struct Particle){ x, y, 0 };
+	pulses[particle_end] = 0;
+	particle_end += 1;
+	particle_end %= 10;
+	
+}
 
 static float lerp(float x1, float x2, float t) {
 	// return x1 + t * (x2 - x1);
 	return x1 * (1 - t) + x2 * t;
+}
+
+static void get_note_position(int position, float progress, int* x, int* y) {
+		switch (position) {
+			case NOTE_POS_L1:
+				*x = lerp(0.0f, 177.0f, progress);
+				*y = lerp(0.0f, 97.0f, progress);
+        break;
+			case NOTE_POS_L2:
+        *x = lerp(0, 170.0f, progress);
+        *y = lerp(60.0f, 108.0f, progress);
+        break;
+			case NOTE_POS_L3:
+        *x = lerp(0, 168.0f, progress);
+        *y = lerp(120.0f, 120.0f, progress);
+				break;
+			case NOTE_POS_L4:
+        *x = lerp(0, 170.0f, progress);
+        *y = lerp(180.0f, 132.0f, progress);
+        break;
+			case NOTE_POS_L5:
+				*x = lerp(0.0, 177.0f, progress);
+				*y = lerp(240.0f, 143.0f, progress);
+				break;
+			case NOTE_POS_R1:
+				*x = lerp(400.0f, 223.0f, progress);
+				*y = lerp(0.0f, 97.0f, progress);
+				break;
+			case NOTE_POS_R2:
+				*x = lerp(400.0f, 212.0f, progress);
+				*y = lerp(60.0f, 108.0f, progress);
+				break;
+			case NOTE_POS_R3:
+				*x = lerp(400.0f, 232.0f, progress);
+				*y = lerp(120.0f, 120.0f, progress);
+				break;
+			case NOTE_POS_R4:
+				*x = lerp(400.0f, 212.0f, progress);
+				*y = lerp(180.0f, 132.0f, progress);
+				break;
+			case NOTE_POS_R5:
+				*x = lerp(400.0f, 223.0f, progress);
+				*y = lerp(240.0f, 143.0f, progress);
+				break;
+			default:
+        *x = 0.0f;
+        *y = 0.0f;
+				break;
+		}
 }
 
 static void load_song(PlaydateAPI* playdate, struct SongPlayer* song_player, const char* path) {
@@ -19,7 +123,7 @@ static void load_song(PlaydateAPI* playdate, struct SongPlayer* song_player, con
   
   char beatmap_path[100];
   strcpy_s(beatmap_path, 100, dir_path);
-  strcpy_s(beatmap_path + strlen(dir_path), 50, "/beatmap");
+  strcpy_s(beatmap_path + strlen(dir_path), 50, "/beatmap.txt");
 
 	char beatmap_text[5000];
 	int file_text_offset;
@@ -32,18 +136,16 @@ static void load_song(PlaydateAPI* playdate, struct SongPlayer* song_player, con
 	}
 
 	int version;
-	char song_path[100];
 	char song_name[26];
 	float bpm;
 	float offset;
-	sscanf_s(beatmap_text, "%d%s%s%f%f%n", &version, song_name, 25, song_path, 49, &bpm, &offset, &file_text_offset);
+	float length;
+	sscanf_s(beatmap_text, "%d%s%f%f%f%n", &version, song_name, 25, &bpm, &offset, &length, &file_text_offset);
 	
   char song_full_path[300] = "Test";
   strcpy_s(song_full_path, 100, dir_path);
-  int path_len = strlen(song_full_path);
-  song_full_path[path_len] = '/';
-  
-  strcpy_s(song_full_path + path_len + 1, 50, song_path);
+  int path_len = strlen(song_full_path); song_full_path[path_len] = '/'; 
+  strcpy_s(song_full_path + path_len + 1, 50, "audio.mp3");
   FilePlayer* song = playdate->sound->fileplayer->newPlayer();
 	int fileplayer_result = playdate->sound->fileplayer->loadIntoPlayer(song, song_full_path);
   
@@ -52,25 +154,29 @@ static void load_song(PlaydateAPI* playdate, struct SongPlayer* song_player, con
     return;
   }
   
-  sp_load(song_player, song, bpm, offset);
+  sp_load(song_player, song, bpm, offset, length);
 
 	strcpy_s(level.name, 26, song_name);
 	level.note_count = 0;
   	
 	// bpm of brain power is 170 (2.371 offset)
+	float last_beat_time = -999.0f; // make sure each note is larger than the last
+	
 	int type;
-	int position;
 	int color;
+	int position;
 	float beat_time;
 	int read;
-  while (sscanf_s(beatmap_text + file_text_offset, "%d%d%d%f%n", &type, &position, &color, &beat_time, &read) != 0) {		
+  while (sscanf_s(beatmap_text + file_text_offset, "%d%d%d%f%n", &type, &color, &position, &beat_time, &read) != 0) {		
 		level.notes[level.note_count].type = type;
-		level.notes[level.note_count].position = position;
 		level.notes[level.note_count].color = color;
+		level.notes[level.note_count].position = position;
 		level.notes[level.note_count].beat_time = beat_time;
-		level.notes[level.note_count].time = level.notes[level.note_count].beat_time * 60 / bpm;
-						
-		file_text_offset += read;
+		level.notes[level.note_count].time = beat_time * 60 / bpm;
+
+		assert(beat_time > last_beat_time);
+
+		file_text_offset += read;				
 		level.note_count += 1;
 	}
 }
@@ -128,152 +234,320 @@ static int angle_to_color(float crank_angle, float note_angle) {
 	}
 }
 
-void song_open(struct PlaydateAPI* playdate, struct SongPlayer* song_player, const char* path) {
-  load_song(playdate, song_player, path);
+static void reset() {	
+	level.score = 0;
+	display_score = 0;
+	level.miss_count = 0;
+	level.ok_count = 0;
+	level.good_count = 0;
+	level.perfect_count = 0;
+	level.combo = 0;
+	level.index = 0;
+	level.health = MAX_HEALTH;
+	particle_end = 0;
+	particle_start = 0;
 }
 
-void song_update(struct PlaydateAPI* playdate, struct SongPlayer* song_player) {
+// HACK
+struct GameData* d;
+
+static void song_finish_callback(SoundSource* source) {
+	level.health = 0;
+}
+
+void song_set_data_ptr(struct GameData* data) {
+	d = data;
+}
+
+void song_open(struct PlaydateAPI* playdate, struct SongPlayer* song_player, const char* path) {
+	reset();
+  load_song(playdate, song_player, path);
+	sp_play(song_player);
+	playdate->sound->fileplayer->setFinishCallback(song_player->current_song, song_finish_callback);
+}
+
+void song_close(struct GameData* data) {
+	sp_stop(&data->song_player);
+}
+
+void song_update(struct GameData* data) {	
   PDButtons pressed;
-  playdate->system->getButtonState(NULL, &pressed, NULL);
-  float angle = playdate->system->getCrankAngle();
+  data->playdate->system->getButtonState(NULL, &pressed, NULL);
+			
+	if (level.health < 1) {
+		if (pressed > 0) {
+			data->state = GAME_STATE_SONG_LIST;
+			data->first_update = 1;
+		}
+		sp_stop(&data->song_player);
+		return;
+	}
 	
+	particles_update();
+		
 	struct Note* note;
 	for (int i = level.index; i < level.note_count; ++i) {
 		note = &level.notes[i];
-		
-		if (note->beat_time - SIGHTREAD_DISTANCE > song_player->beat_time) {
+		if (note->beat_time - data->song_player.bpm * SIGHTREAD_DISTANCE > data->song_player.beat_time) {
 			break;
 		}
 		
 		if (note->type == NOTE_CLICK) {
 			// too late
-			if (note->time + 0.11f < song_player->time) {
+			if (note->time + 0.11f < data->song_player.time) {
 				level.miss_count += 1;
 				level.index += 1;
+				level.health -= 15;
+				prompt_show = 1;
+				missed = 1;
+				prompt_ease = 1.0f;
+				prompt = 0;
+				level.combo = 0;
 			}
 	
 			// playdate->graphics->setStencilImage(clear_bitmap, 1);
-			if (pressed > 0) {
-				float diff = note->time - song_player->time;
+			if (pressed > 0 && level.index == i) {
+				float diff = note->time - data->song_player.time;
 				float diff_2 = diff * diff;
 				
 				// inside clickable range
-				if (diff_2 < 0.11f * 0.11f && note->color == angle_to_color(playdate->system->getCrankAngle(), note_position_to_angle(note->position))) {
+				if (diff_2 < 0.11f * 0.11f && note->color == angle_to_color(data->playdate->system->getCrankAngle(), note_position_to_angle(note->position))) {
 					level.index += 1;
+					level.health += 5;
+					prompt_show = 1;
+					prompt_ease = 1.0f;
+					level.combo += 1;
+					float progress = 1.0f - (note->beat_time - data->song_player.beat_time) / (data->song_player.bpm * SIGHTREAD_DISTANCE);
+					int x, y;
+					get_note_position(note->position, progress, &x, &y);
+					particles_make(x, y);
 					if (diff_2 < 0.045f * 0.045f) {
-						level.perfect_count += 1;					
-						score += 100;
+						level.perfect_count += 1;
+						level.score += 100;
+						prompt = 3;
 					} else if (diff_2 < 0.07f * 0.07f) {
 						level.good_count += 1;
-						score += 30;
+						level.score += 30;
+						prompt = 2;
 					} else {
 						level.ok_count += 1;
-						score += 10;
+						level.score += 10;
+						prompt = 1;
 					}
 				}
 			}
 		} else if (note->type == NOTE_NORMAL) {
-			if (note->time < song_player->time) {
+			if (note->time < data->song_player.time) {
 				level.index += 1;
         float note_angle = note_position_to_angle(note->position);				
-        if (note->color == angle_to_color(playdate->system->getCrankAngle(), note_angle)) {
-  				score += 50;
-        }
+        if (note->color == angle_to_color(data->playdate->system->getCrankAngle(), note_angle)) {
+					float progress = 1.0f - (note->beat_time - data->song_player.beat_time) / (data->song_player.bpm * SIGHTREAD_DISTANCE);
+					int x, y;
+					get_note_position(note->position, progress, &x, &y);
+					particles_make(x, y);
+  				level.score += 50;
+					level.health += 3;
+					level.combo += 1;
+        } else {
+					level.combo = 0;
+					missed = 1;
+					level.health -= 5;
+				}
 			}
 		} else if (note->type == NOTE_DANGER) {
-			if (note->time < song_player->time) {
+			if (note->time < data->song_player.time) {
 				level.index += 1;
 				float note_angle = note_position_to_angle(note->position);
-				if (note->color == angle_to_color(playdate->system->getCrankAngle(), note_angle)) {
-					score -= 100;
+				if (note->color == angle_to_color(data->playdate->system->getCrankAngle(), note_angle)) {
+					level.health -= 20;
+					missed = 1;
+					level.combo = 0;
+				} else {
+					level.score += 25;
+					level.health += 10;
+					level.combo += 1;
 				}
 			}
 		}
 	}
+	
+	if (level.health > MAX_HEALTH) {
+		level.health = MAX_HEALTH;
+	}
+	
+	if (level.ok_count + level.good_count + level.perfect_count + level.miss_count > 0) {
+		level.accuracy = (float)level.ok_count * 10.0f + (float)level.good_count * 30.0f + (float)level.perfect_count * 100.0f;
+		level.accuracy /= (float)(level.ok_count + level.good_count + level.perfect_count + level.miss_count) * 100.0f;
+	} else {
+		level.accuracy = 0.0f;
+	}
 }
 
-void song_draw(struct GameData* data) {	
-	float x, y;
+static void draw_disk(struct GameData* data) {
+	float angle = data->playdate->system->getCrankAngle();
+
+	int size = DISK_SIZE;
+	PDButtons buttons;
+	data->playdate->system->getButtonState(&buttons, NULL, NULL);
+  
+	if (buttons > 0) {
+		size = DISK_SIZE_MAX;
+	}
+  
+	int offset = (DISK_SIZE_MAX - size) / 2;
+	int bounds_x = 400 / 2 - DISK_SIZE_MAX / 2;
+	int bounds_y = 240 / 2 - DISK_SIZE_MAX / 2;
+
+	data->playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, 0.0f, 0.0f, kColorWhite);
+
+	// white
+	data->playdate->graphics->drawEllipse(bounds_x + offset, bounds_y + offset, size, size, 2, angle + 0.0f, angle + 90.0f, kColorBlack);
+	data->playdate->graphics->drawEllipse(bounds_x + offset, bounds_y + offset, size, size, 2, angle + 180.0f, angle + 270.0f, kColorBlack);
+	// black
+	data->playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, angle + 270.0f, angle + 360.0f, kColorBlack);
+	data->playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, angle + 90.0f, angle + 180.0f, kColorBlack);
+}
+
+
+void song_draw(struct GameData* data) {
+	const struct playdate_graphics* graphics = data->playdate->graphics;
+	
+	if (level.health < 1) {
+		data->playdate->graphics->clear(kColorWhite);
+		data->playdate->graphics->drawText("Game Over", 9, kASCIIEncoding, 200, 120);
+		char buffer[100];
+		sprintf(buffer, "Score: %d", level.score);
+		data->playdate->graphics->drawText(buffer, 99, kASCIIEncoding, 200, 150);
+		
+		return;
+	}
+	
+	int x, y;
 	float progress;
 	struct Note* note;
 	for (int i = level.index; i < level.note_count; ++i) {
 		note = &level.notes[i];
 		// not yet
-		if (note->beat_time - SIGHTREAD_DISTANCE > data->song_player.beat_time) {
+		if (note->beat_time - data->song_player.bpm * SIGHTREAD_DISTANCE > data->song_player.beat_time) {
 			break;
 		}
 				
     // The lerped values are precalculated
-		progress = 1.0f - (note->beat_time - data->song_player.beat_time) / SIGHTREAD_DISTANCE;
-		switch (note->position) {
-			case NOTE_POS_L1:
-				x = lerp(0.0f, 177.0f, progress);
-				y = lerp(0.0f, 97.0f, progress);
-        break;
-			case NOTE_POS_L2:
-        x = lerp(0, 170.0f, progress);
-        y = lerp(60.0f, 108.0f, progress);
-        break;
-			case NOTE_POS_L3:
-        x = lerp(0, 168.0f, progress);
-        y = lerp(120.0f, 120.0f, progress);
-				break;
-			case NOTE_POS_L4:
-        x = lerp(0, 170.0f, progress);
-        y = lerp(180.0f, 132.0f, progress);
-        break;
-			case NOTE_POS_L5:
-				x = lerp(0.0, 177.0f, progress);
-				y = lerp(240.0f, 143.0f, progress);
-				break;
-			case NOTE_POS_R1:
-				x = lerp(400.0f, 223.0f, progress);
-				y = lerp(0.0f, 97.0f, progress);
-				break;
-			case NOTE_POS_R2:
-				x = lerp(400.0f, 212.0f, progress);
-				y = lerp(60.0f, 108.0f, progress);
-				break;
-			case NOTE_POS_R3:
-				x = lerp(400.0f, 232.0f, progress);
-				y = lerp(120.0f, 120.0f, progress);
-				break;
-			case NOTE_POS_R4:
-				x = lerp(400.0f, 212.0f, progress);
-				y = lerp(180.0f, 132.0f, progress);
-				break;
-			case NOTE_POS_R5:
-				x = lerp(400.0f, 223.0f, progress);
-				y = lerp(240.0f, 143.0f, progress);
-				break;
-			default:
-        x = 0.0f;
-        y = 0.0f;
-				break;
-		}		
-		
+		progress = 1.0f - (note->beat_time - data->song_player.beat_time) / (data->song_player.bpm * SIGHTREAD_DISTANCE);
+		get_note_position(note->position, progress, &x, &y);
+				
 		// playdate->graphics->drawBitmap(note_bitmap, (int)x - 12, (int)y - 12, kBitmapUnflipped);
 
-		if (note->type == NOTE_DANGER) {
-			LCDBitmap* bitmap = note->color == NOTE_BLACK ? data->black_x_bitmap : data->white_x_bitmap;
-			data->playdate->graphics->drawBitmap(bitmap, x - 12, y - 12, kBitmapUnflipped);
-		} else {
-			int note_size = 16;
-	    if (note->color == NOTE_WHITE) {
-	      data->playdate->graphics->drawEllipse(x - (note_size >> 1), y - (note_size >> 1), note_size, note_size, 1, 0.0f, 0.0f, kColorBlack);
-	    } else {      
-	  		data->playdate->graphics->fillEllipse(x - (note_size >> 1), y - (note_size >> 1), note_size, note_size, 0.0f, 0.0f, kColorBlack);
-	    }
-    
-	    if (note->type == NOTE_CLICK) {
-			  data->playdate->graphics->drawEllipse(x - (note_size >> 1) - 6, y - (note_size >> 1) - 6, note_size + 12, note_size + 12, 2, 0.0f, 0.0f, kColorBlack);
+		switch (note->type) {
+			case NOTE_NORMAL: {
+				int note_size = 14;
+				if (note->color == NOTE_WHITE) {
+					graphics->drawEllipse(x - (note_size >> 1), y - (note_size >> 1), note_size, note_size, 1, 0.0f, 0.0f, kColorBlack);				
+				} else {
+					graphics->fillEllipse(x - (note_size >> 1), y - (note_size >> 1), note_size, note_size, 0.0f, 0.0f, kColorBlack);
+				}
+				break;
 			}
-		}
-    
+			case NOTE_CLICK: {
+				int note_size = 16;
+				if (note->color == NOTE_WHITE) {
+					graphics->drawEllipse(x - (note_size >> 1), y - (note_size >> 1), note_size, note_size, 1, 0.0f, 0.0f, kColorBlack);
+				} else {
+					graphics->fillEllipse(x - (note_size >> 1), y - (note_size >> 1), note_size, note_size, 0.0f, 0.0f, kColorBlack);
+				}
+				
+				graphics->drawEllipse(x - (note_size >> 1) - 6, y - (note_size >> 1) - 6, note_size + 12, note_size + 12, 2, 0.0f, 0.0f, kColorBlack);
+				break;
+			}
+			case NOTE_DANGER:
+				if (note->color == NOTE_WHITE) {
+					graphics->drawBitmap(data->white_x_bitmap, x - 12, y - 12, kBitmapUnflipped);
+				} else {
+					graphics->drawBitmap(data->black_x_bitmap, x - 12, y - 12, kBitmapUnflipped);
+				}
+				break;
+			default:
+				break;
+		}    
 	}
-  
-	data->playdate->graphics->drawText(level.name, 26, kASCIIEncoding, (400 / 2), 0);
-	char score_display[100];
-	sprintf(score_display, "%d %d %d %.2f", score, level.miss_count, level.ok_count, data->song_player.time);
-	data->playdate->graphics->drawText(score_display, 20, kASCIIEncoding, (400 / 2), 225);
+	
+	draw_disk(data);
+	
+	particles_draw(data);
+	
+	// if (data->song_player.time < 0) {
+	// 	char buffer[100];
+	// 	sprintf(buffer, "%d", -1 * (int)data->song_player.time);
+	// 	graphics->drawText(buffer, 1, kASCIIEncoding, 190, 110);
+	// 	// running = 1;
+	// }
+
+	// UI
+	// --
+	// score
+	char display_buffer[50];
+	if (display_score < level.score) {
+		int diff = level.score - display_score;
+		display_score += (diff + 1) >> 1;
+	}
+	sprintf(display_buffer, "%d", display_score);
+	data->playdate->graphics->drawText(display_buffer, 50, kASCIIEncoding, 200 - data->playdate->graphics->getTextWidth(data->font, display_buffer, 26, kASCIIEncoding, 0) / 2.0f, 200);
+	
+	// name
+	data->playdate->graphics->drawText(level.name, 26, kASCIIEncoding, 200 - data->playdate->graphics->getTextWidth(data->font, level.name, 26, kASCIIEncoding, 0) / 2.0f, 5);
+	
+	// health
+	if (missed) {
+		missed = 0;
+		health_shake_index = 0;
+	}
+	if (health_shake_index > 10) {
+		health_shake_index = 10;
+	}
+	int offset = health_shake[health_shake_index];
+	health_shake_index += 2;
+	
+	data->playdate->graphics->drawRect(200 - 50 + offset, 240 - 18 - 3, 100, 18, kColorBlack);
+	data->playdate->graphics->fillRect(200 - 50 + 2 + offset, 240 - 18 - 3 + 2, 96 * level.health / 100, 14, kColorBlack);
+	
+	// timer
+	data->playdate->graphics->drawEllipse(200 - 50 - 8 - 18 + offset, 240 - 3 - 18, 18, 18, 1, 0.0f, 0.0f, kColorBlack);
+	data->playdate->graphics->fillEllipse(200 - 50 - 8 - 18 + offset, 240 - 3 - 18, 18, 18, 0.0f, 360.0f * data->song_player.percentage, kColorBlack);
+	
+	// accuracy
+	sprintf(display_buffer, "%.2f%%", level.accuracy * 100.0f);
+	// data->playdate->graphics->setFont(data->accuracy_font);
+	data->playdate->graphics->drawText(display_buffer, 50, kASCIIEncoding, 200 + 50 + 5 + offset, 240 - data->playdate->graphics->getFontHeight(data->font));
+	// data->playdate->graphics->setFont(data->font);
+		
+	// prompt
+	int prompt_y = (int)(prompt_ease * 10.0f);
+	prompt_ease *= 0.9;
+	int height = 50;
+	if (prompt_ease < 0.1) {
+		prompt_ease = 0.0f;
+	} else {
+		switch (prompt) {
+			case 0:
+				data->playdate->graphics->drawText("Miss", 4, kASCIIEncoding, 200 - data->playdate->graphics->getTextWidth(data->font, "Miss", 4, kASCIIEncoding, 0) / 2, height - prompt_y);
+				break;
+			case 1:
+				data->playdate->graphics->drawText("OK", 2, kASCIIEncoding, 200 - data->playdate->graphics->getTextWidth(data->font, "OK", 2, kASCIIEncoding, 0) / 2, height - prompt_y);
+				break;
+			case 2:
+				data->playdate->graphics->drawText("Good", 4, kASCIIEncoding, 200 - data->playdate->graphics->getTextWidth(data->font, "Good", 4, kASCIIEncoding, 0) / 2, height - prompt_y);
+				break;
+			case 3:
+				data->playdate->graphics->drawText("Perfect", 7, kASCIIEncoding, 200 - data->playdate->graphics->getTextWidth(data->font, "Perfect", 7, kASCIIEncoding, 0) / 2, height - prompt_y);
+				break;
+			default:
+				break;
+		}
+	}
+	
+	// combo
+	if (level.combo > 0) {
+		sprintf(display_buffer, "Combo %d", level.combo);
+		data->playdate->graphics->drawText(display_buffer, 50, kASCIIEncoding, 200 - data->playdate->graphics->getTextWidth(data->font, display_buffer, 50, kASCIIEncoding, 0) / 2, height - 20 - (prompt_y >> 1));
+	}
 }

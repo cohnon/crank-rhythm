@@ -9,6 +9,7 @@
 #define GAME_STATE_SONG_LIST 1
 #define GAME_STATE_SETTINGS 2
 #define GAME_STATE_SONG 3
+#define GAME_STATE_TUTORIAL 4
 
 struct GameData {
   uint8_t state;
@@ -17,6 +18,8 @@ struct GameData {
   PlaydateAPI* playdate;
   LCDBitmap* black_x_bitmap;
   LCDBitmap* white_x_bitmap;
+  LCDFont* font;
+  LCDFont* accuracy_font;
   struct SongPlayer song_player;
 };
 
