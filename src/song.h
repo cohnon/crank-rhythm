@@ -53,7 +53,7 @@ struct Song {
 	int note_count;
 	int combo;
 	float accuracy;
-	struct Note notes[1000];
+	struct Note* notes;
 };
 
 void song_set_data_ptr(struct GameData* data);

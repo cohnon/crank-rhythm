@@ -1,15 +1,14 @@
 #include "song.h"
 #include "pd_api/pd_api_gfx.h"
-#include <math.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
 
 #define DISK_SIZE 64
 #define DISK_SIZE_MAX 74
 
 // TODO Make sightreading based on time not beat time
-#define SIGHTREAD_DISTANCE (3.0f / 170.0)
+#define SIGHTREAD_DISTANCE (3.0f / 170.0f)
 
 struct Song level;
 
@@ -23,6 +22,8 @@ int prompt;
 float health_shake[11] = {0, 2, 4, 4, 2, 0, -3, -5, -5, -3, 0};
 int missed;
 int health_shake_index = 10;
+
+int failed_to_load_song = 0;
 
 struct Particle {
 	uint16_t x;
@@ -48,7 +49,7 @@ static void particles_update() {
 
 static void particles_draw(struct GameData* data) {
 	for (int i = particle_start; i != particle_end; i = (i + 1) % 10) {
-		struct Particle* p = &particles[i];
+		// struct Particle* p = &particles[i];
 		// data->playdate->graphics->drawRect(p->x - p->life / 2, p->y - p->life / 2, p->life, p->life, kColorBlack);
 		// data->playdate->graphics->drawRect(p->x - p->life / 2 - 1, p->y - p->life / 2 - 1, p->life + 2, p->life + 2, kColorWhite);
 		data->playdate->graphics->drawEllipse(200 - 32 - pulses[i] / 2, 120 - 32 - pulses[i] / 2, 64 + pulses[i], 64 + pulses[i], 1, 0.0f, 0.0f, kColorBlack);
@@ -69,96 +70,99 @@ static float lerp(float x1, float x2, float t) {
 }
 
 static void get_note_position(int position, float progress, int* x, int* y) {
-		switch (position) {
-			case NOTE_POS_L1:
-				*x = lerp(0.0f, 177.0f, progress);
-				*y = lerp(0.0f, 97.0f, progress);
-        break;
-			case NOTE_POS_L2:
-        *x = lerp(0, 170.0f, progress);
-        *y = lerp(60.0f, 108.0f, progress);
-        break;
-			case NOTE_POS_L3:
-        *x = lerp(0, 168.0f, progress);
-        *y = lerp(120.0f, 120.0f, progress);
-				break;
-			case NOTE_POS_L4:
-        *x = lerp(0, 170.0f, progress);
-        *y = lerp(180.0f, 132.0f, progress);
-        break;
-			case NOTE_POS_L5:
-				*x = lerp(0.0, 177.0f, progress);
-				*y = lerp(240.0f, 143.0f, progress);
-				break;
-			case NOTE_POS_R1:
-				*x = lerp(400.0f, 223.0f, progress);
-				*y = lerp(0.0f, 97.0f, progress);
-				break;
-			case NOTE_POS_R2:
-				*x = lerp(400.0f, 212.0f, progress);
-				*y = lerp(60.0f, 108.0f, progress);
-				break;
-			case NOTE_POS_R3:
-				*x = lerp(400.0f, 232.0f, progress);
-				*y = lerp(120.0f, 120.0f, progress);
-				break;
-			case NOTE_POS_R4:
-				*x = lerp(400.0f, 212.0f, progress);
-				*y = lerp(180.0f, 132.0f, progress);
-				break;
-			case NOTE_POS_R5:
-				*x = lerp(400.0f, 223.0f, progress);
-				*y = lerp(240.0f, 143.0f, progress);
-				break;
-			default:
-        *x = 0.0f;
-        *y = 0.0f;
-				break;
-		}
+	switch (position) {
+		case NOTE_POS_L1:
+			*x = lerp(0.0f, 177.0f, progress);
+			*y = lerp(0.0f, 97.0f, progress);
+      break;
+		case NOTE_POS_L2:
+      *x = lerp(0, 170.0f, progress);
+      *y = lerp(60.0f, 108.0f, progress);
+      break;
+		case NOTE_POS_L3:
+      *x = lerp(0, 168.0f, progress);
+      *y = lerp(120.0f, 120.0f, progress);
+			break;
+		case NOTE_POS_L4:
+      *x = lerp(0, 170.0f, progress);
+      *y = lerp(180.0f, 132.0f, progress);
+      break;
+		case NOTE_POS_L5:
+			*x = lerp(0.0, 177.0f, progress);
+			*y = lerp(240.0f, 143.0f, progress);
+			break;
+		case NOTE_POS_R1:
+			*x = lerp(400.0f, 223.0f, progress);
+			*y = lerp(0.0f, 97.0f, progress);
+			break;
+		case NOTE_POS_R2:
+			*x = lerp(400.0f, 212.0f, progress);
+			*y = lerp(60.0f, 108.0f, progress);
+			break;
+		case NOTE_POS_R3:
+			*x = lerp(400.0f, 232.0f, progress);
+			*y = lerp(120.0f, 120.0f, progress);
+			break;
+		case NOTE_POS_R4:
+			*x = lerp(400.0f, 212.0f, progress);
+			*y = lerp(180.0f, 132.0f, progress);
+			break;
+		case NOTE_POS_R5:
+			*x = lerp(400.0f, 223.0f, progress);
+			*y = lerp(240.0f, 143.0f, progress);
+			break;
+		default:
+      *x = 0.0f;
+      *y = 0.0f;
+			break;
+	}
 }
 
-static void load_song(PlaydateAPI* playdate, struct SongPlayer* song_player, const char* path) {
+static int load_song(PlaydateAPI* playdate, struct SongPlayer* song_player, const char* path) {
+	
+	debug_log("Loading");
+
   char dir_path[100] = "songs/";
-  strcpy_s(dir_path + 6, 100 - 6, path);
+  strcat(dir_path, path);
   
   char beatmap_path[100];
-  strcpy_s(beatmap_path, 100, dir_path);
-  strcpy_s(beatmap_path + strlen(dir_path), 50, "/beatmap.txt");
+  strcpy(beatmap_path, dir_path);
+  strcat(beatmap_path, "/beatmap.txt");
 
-	char beatmap_text[5000];
+	char beatmap_text[50];
 	int file_text_offset;
 	SDFile* file = playdate->file->open(beatmap_path, kFileRead);
-	playdate->file->read(file, beatmap_text, 5000);
+	int file_read_result = playdate->file->read(file, beatmap_text, 50);
 	
-	if (file == NULL) {
-		playdate->system->logToConsole("%s\nFailed to read %s", path, beatmap_path);
-    return;
+	if (file_read_result == -1) {
+		playdate->system->logToConsole("Failed to read %s", beatmap_path);
+		debug_log("Fail1");
+    return 0;
 	}
 
 	int version;
 	char song_name[26];
 	float bpm;
 	float offset;
-	float length;
-	sscanf_s(beatmap_text, "%d%s%f%f%f%n", &version, song_name, 25, &bpm, &offset, &length, &file_text_offset);
-	
-  char song_full_path[300] = "Test";
-  strcpy_s(song_full_path, 100, dir_path);
-  int path_len = strlen(song_full_path); song_full_path[path_len] = '/'; 
-  strcpy_s(song_full_path + path_len + 1, 50, "audio.mp3");
-  FilePlayer* song = playdate->sound->fileplayer->newPlayer();
-	int fileplayer_result = playdate->sound->fileplayer->loadIntoPlayer(song, song_full_path);
-  
-  if (fileplayer_result == 0) {
-    playdate->system->logToConsole("Failed to load %s", song_full_path);
-    return;
-  }
-  
-  sp_load(song_player, song, bpm, offset, length);
+	sscanf(beatmap_text, "%d\n%s\n%f\n%f\n%n", &version, song_name, &bpm, &offset, &file_text_offset);
 
-	strcpy_s(level.name, 26, song_name);
+	debug_log(song_name);
+		
+  char song_full_path[100];
+  strcpy(song_full_path, dir_path);
+  strcat(song_full_path, "/audio");
+  
+  int sp_load_result = sp_load(song_player, song_full_path, bpm, offset);
+	
+	if (!sp_load_result) {
+		playdate->system->logToConsole("Failed to load audio file");
+		debug_log("Fail2");
+		return 0;
+	}
+	
+	strcpy(level.name, song_name);
 	level.note_count = 0;
-  	
+	
 	// bpm of brain power is 170 (2.371 offset)
 	float last_beat_time = -999.0f; // make sure each note is larger than the last
 	
@@ -167,7 +171,32 @@ static void load_song(PlaydateAPI* playdate, struct SongPlayer* song_player, con
 	int position;
 	float beat_time;
 	int read;
-  while (sscanf_s(beatmap_text + file_text_offset, "%d%d%d%f%n", &type, &color, &position, &beat_time, &read) != 0) {		
+	int file_read;
+	int count = 0;
+  while (count < 1000) {
+		count++;
+		playdate->file->seek(file, file_text_offset, SEEK_SET);
+		file_read = playdate->file->read(file, beatmap_text, 50);
+		sscanf(beatmap_text, "%d %d %d %f\n%n", &type, &color, &position, &beat_time, &read);
+
+		if (count == 1) {
+			debug_log("1st note");
+			char buffer[10];
+			snprintf(buffer, 10, "type:%d", type);
+			debug_log(buffer);
+			snprintf(buffer, 10, "col:%d", color);
+			debug_log(buffer);
+			snprintf(buffer, 10, "pos:%d", position);
+			debug_log(buffer);
+			snprintf(buffer, 10, "time:%d", (int)beat_time);
+			debug_log(buffer);
+		}
+
+		beatmap_text[20] = 0;
+		if (file_read == 0) {
+			break;
+		}
+
 		level.notes[level.note_count].type = type;
 		level.notes[level.note_count].color = color;
 		level.notes[level.note_count].position = position;
@@ -176,9 +205,13 @@ static void load_song(PlaydateAPI* playdate, struct SongPlayer* song_player, con
 
 		assert(beat_time > last_beat_time);
 
-		file_text_offset += read;				
+		file_text_offset += read;
 		level.note_count += 1;
 	}
+	
+	debug_log("Success");
+		
+	return 1;
 }
 
 static float note_position_to_angle(int position) {	
@@ -246,6 +279,7 @@ static void reset() {
 	level.health = MAX_HEALTH;
 	particle_end = 0;
 	particle_start = 0;
+	failed_to_load_song = 0;
 }
 
 // HACK
@@ -257,11 +291,17 @@ static void song_finish_callback(SoundSource* source) {
 
 void song_set_data_ptr(struct GameData* data) {
 	d = data;
+	level.notes = (struct Note*)data->playdate->system->realloc(NULL, sizeof(struct Note) * 1000);
 }
 
 void song_open(struct PlaydateAPI* playdate, struct SongPlayer* song_player, const char* path) {
 	reset();
-  load_song(playdate, song_player, path);
+  int load_song_result = load_song(playdate, song_player, path);
+	if (!load_song_result) {
+		level.health = 0;
+		failed_to_load_song = 1;
+		return;
+	}
 	sp_play(song_player);
 	playdate->sound->fileplayer->setFinishCallback(song_player->current_song, song_finish_callback);
 }
@@ -284,7 +324,11 @@ void song_update(struct GameData* data) {
 	}
 	
 	particles_update();
-		
+	
+	// debug
+	data->debug_next_note = level.notes[level.index].beat_time;
+	data->debug_next_note_position = level.notes[level.index].position;
+
 	struct Note* note;
 	for (int i = level.index; i < level.note_count; ++i) {
 		note = &level.notes[i];
@@ -416,8 +460,11 @@ void song_draw(struct GameData* data) {
 		data->playdate->graphics->clear(kColorWhite);
 		data->playdate->graphics->drawText("Game Over", 9, kASCIIEncoding, 200, 120);
 		char buffer[100];
-		sprintf(buffer, "Score: %d", level.score);
+		snprintf(buffer, 100, "Score: %d", level.score);
 		data->playdate->graphics->drawText(buffer, 99, kASCIIEncoding, 200, 150);
+		if (failed_to_load_song) {
+			data->playdate->graphics->drawText("Failed to open song", 99, kASCIIEncoding, 0, 10);
+		}
 		
 		return;
 	}
@@ -468,20 +515,13 @@ void song_draw(struct GameData* data) {
 				break;
 			default:
 				break;
-		}    
+		}		
 	}
 	
 	draw_disk(data);
 	
 	particles_draw(data);
 	
-	// if (data->song_player.time < 0) {
-	// 	char buffer[100];
-	// 	sprintf(buffer, "%d", -1 * (int)data->song_player.time);
-	// 	graphics->drawText(buffer, 1, kASCIIEncoding, 190, 110);
-	// 	// running = 1;
-	// }
-
 	// UI
 	// --
 	// score
@@ -490,7 +530,7 @@ void song_draw(struct GameData* data) {
 		int diff = level.score - display_score;
 		display_score += (diff + 1) >> 1;
 	}
-	sprintf(display_buffer, "%d", display_score);
+	snprintf(display_buffer, 50, "%d", display_score);
 	data->playdate->graphics->drawText(display_buffer, 50, kASCIIEncoding, 200 - data->playdate->graphics->getTextWidth(data->font, display_buffer, 26, kASCIIEncoding, 0) / 2.0f, 200);
 	
 	// name
@@ -515,16 +555,16 @@ void song_draw(struct GameData* data) {
 	data->playdate->graphics->fillEllipse(200 - 50 - 8 - 18 + offset, 240 - 3 - 18, 18, 18, 0.0f, 360.0f * data->song_player.percentage, kColorBlack);
 	
 	// accuracy
-	sprintf(display_buffer, "%.2f%%", level.accuracy * 100.0f);
+	snprintf(display_buffer, 50, "%.2f%%", level.accuracy * 100.0f);
 	// data->playdate->graphics->setFont(data->accuracy_font);
 	data->playdate->graphics->drawText(display_buffer, 50, kASCIIEncoding, 200 + 50 + 5 + offset, 240 - data->playdate->graphics->getFontHeight(data->font));
 	// data->playdate->graphics->setFont(data->font);
 		
 	// prompt
 	int prompt_y = (int)(prompt_ease * 10.0f);
-	prompt_ease *= 0.9;
+	prompt_ease *= 0.9f;
 	int height = 50;
-	if (prompt_ease < 0.1) {
+	if (prompt_ease < 0.1f) {
 		prompt_ease = 0.0f;
 	} else {
 		switch (prompt) {
@@ -547,7 +587,7 @@ void song_draw(struct GameData* data) {
 	
 	// combo
 	if (level.combo > 0) {
-		sprintf(display_buffer, "Combo %d", level.combo);
+		snprintf(display_buffer, 50, "Combo %d", level.combo);
 		data->playdate->graphics->drawText(display_buffer, 50, kASCIIEncoding, 200 - data->playdate->graphics->getTextWidth(data->font, display_buffer, 50, kASCIIEncoding, 0) / 2, height - 20 - (prompt_y >> 1));
 	}
 }

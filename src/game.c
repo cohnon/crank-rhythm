@@ -11,8 +11,6 @@ struct GameData data;
 
 const char* fontpath = "/System/Fonts/Asheville-Sans-14-Bold.pft";
 
-LCDBitmap* bg_tile_bitmap = NULL;
-
 int map_select;
 int map_index = 1;
 float map_select_range;
@@ -23,7 +21,7 @@ void game_setup_pd(PlaydateAPI* playdate) {
 }
 
 static void get_song(const char* filename, void* userdata) {
-	strcpy_s(map_ids[map_index], 50, filename);
+	strcpy(map_ids[map_index], filename);
 
 	int i = 0;
 	while (1) {
@@ -69,14 +67,14 @@ static void update_tutorial() {
 static void update_main_menu() {
 	if (data.first_update) {
 		data.first_update = 0;
-		data.playdate->graphics->tileBitmap(bg_tile_bitmap, 0, 0, 400, 240, kBitmapUnflipped);
+		data.playdate->graphics->tileBitmap(data.bg_tile_bitmap, 0, 0, 400, 240, kBitmapUnflipped);
 		data.playdate->graphics->drawText("4Tune", 5, kASCIIEncoding, 200, 120);
 		data.playdate->graphics->drawText("press any button", 16, kASCIIEncoding, 200, 150);
 	}
 	
 	if (data.frame % 4 == 0) {
 		int offset = -32 + ((data.frame >> 2) % 32);
-		data.playdate->graphics->tileBitmap(bg_tile_bitmap, offset, offset, 432, 262, kBitmapUnflipped);
+		data.playdate->graphics->tileBitmap(data.bg_tile_bitmap, offset, offset, 432, 262, kBitmapUnflipped);
 		data.playdate->graphics->drawText("4Tune", 5, kASCIIEncoding, 200, 120);
 		data.playdate->graphics->drawText("press any button", 16, kASCIIEncoding, 200, 150);
 	}
@@ -195,24 +193,34 @@ static void menu_home_callback(void* userdata) {
 	song_close(&data);
 }
 
-void game_init() {	
+static void menu_debug_callback(void* userdata) {
+	data.debug = data.playdate->system->getMenuItemValue(data.debug_menu);
+	data.playdate->system->logToConsole("%d", data.debug);
+}
+
+void game_init() {
 	sp_init(&data.song_player, data.playdate);
 	song_set_data_ptr(&data);
 	
+	debug_log("Debug");
+	
 	data.playdate->system->addMenuItem("Quit Song", menu_home_callback, NULL);
+	data.debug_menu = data.playdate->system->addCheckmarkMenuItem("Debug", 1, menu_debug_callback, NULL);
+	data.debug = 1;
 	
 	data.state = GAME_STATE_MAIN_MENU;
 	data.first_update = 1;
 			
 	const char* err;
 	data.font = data.playdate->graphics->loadFont(fontpath, &err);
-	data.accuracy_font = data.playdate->graphics->loadFont("blocks.pft", &err);
 	data.playdate->graphics->setFont(data.font);
 
 	data.black_x_bitmap = data.playdate->graphics->loadBitmap("x.png", &err);
 	data.white_x_bitmap = data.playdate->graphics->loadBitmap("white_x.png", &err);
-	bg_tile_bitmap = data.playdate->graphics->loadBitmap("bg-tiles.png", &err);
-		
+	data.bg_tile_bitmap = data.playdate->graphics->loadBitmap("bg-tiles.png", &err);
+	data.light_grey_bitmap = data.playdate->graphics->loadBitmap("light-grey.png", &err);
+	data.clear_bitmap = data.playdate->graphics->loadBitmap("clear.png", &err);
+			
 	data.playdate->file->listfiles("songs", get_song, NULL, 0);
   
 	// song_open(pd, &song_player, "song.4t");
@@ -245,6 +253,39 @@ void game_update() {
 	
 	data.frame += 1;
 
-	data.playdate->system->drawFPS(0, 0);
+	if (data.debug) {
+		float width = 100;
+		float rows = 4;
+		data.playdate->system->drawFPS(0, 0);
+
+		data.playdate->graphics->fillRect(400 - width, rows * 18 + 4, width, 240 - (rows * 18 + 4), kColorWhite);
+		data.playdate->graphics->drawRect(400 - width, rows * 18 + 4, width, 240 - (rows * 18 + 4), kColorBlack);
+
+		for (int i = data.debug_log_start; i != data.debug_log_end; i = (i + 1) % 10) {
+			data.playdate->graphics->drawText(data.debug_log[i], 10, kASCIIEncoding, 400 - width + 2, (rows * 18 + 4) + (18 * ((i - data.debug_log_start + 10) % 10)));
+		}
+
+		char buffer[20];
+		data.playdate->graphics->fillRect(400 - width, 0, width, rows * 18 + 4, kColorWhite);
+		data.playdate->graphics->drawRect(400 - width, 0, width, rows * 18 + 4, kColorBlack);
+		snprintf(buffer, 20, "time: %.1f", data.song_player.beat_time);
+		data.playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 400 - width + 2, 2 + 18 * 0);
+		
+		snprintf(buffer, 20, "next: %d", (int)data.debug_next_note);
+		data.playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 400 - width + 2, 2 + 18 * 1);
+
+		snprintf(buffer, 20, "pos: %d", data.debug_next_note_position);
+		data.playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 400 - width + 2, 2 + 18 * 2);
+
+		snprintf(buffer, 20, "tot: %d", data.debug_total_notes);
+		data.playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 400 - width + 2, 2 + 18 * 3);
+	}
 }
 
+void debug_log(const char* msg) {
+	strcpy(data.debug_log[data.debug_log_end], msg);
+	data.debug_log_end = (data.debug_log_end + 1) % 10;
+	if (data.debug_log_end == data.debug_log_start) {
+		data.debug_log_start += 1;
+	}
+}

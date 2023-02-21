@@ -19,9 +19,8 @@ struct SongPlayer {
 };
 
 void sp_init(struct SongPlayer* player, PlaydateAPI* playdate);
-void sp_load(struct SongPlayer* player, FilePlayer* song, float bpm, float offset, float length);
+int sp_load(struct SongPlayer* player, const char* path, const float bpm, const float offset);
 void sp_play(struct SongPlayer* player);
-void sp_pause(struct SongPlayer* player);
 void sp_stop(struct SongPlayer* player);
 void sp_update(struct SongPlayer* player);
 

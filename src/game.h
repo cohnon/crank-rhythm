@@ -18,13 +18,25 @@ struct GameData {
   PlaydateAPI* playdate;
   LCDBitmap* black_x_bitmap;
   LCDBitmap* white_x_bitmap;
+  LCDBitmap* bg_tile_bitmap;
+  LCDBitmap* light_grey_bitmap;
+  LCDBitmap* clear_bitmap;
   LCDFont* font;
-  LCDFont* accuracy_font;
   struct SongPlayer song_player;
+  PDMenuItem* debug_menu;
+  int debug;
+  float debug_next_note;
+  int debug_next_note_position;
+  int debug_total_notes;
+  char debug_log[10][10];
+  int debug_log_start;
+  int debug_log_end;
 };
 
 void game_setup_pd(PlaydateAPI* playdate);
 void game_init();
 void game_update();
+
+void debug_log(const char* msg);
 
 #endif

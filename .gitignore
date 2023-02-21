@@ -1,4 +1,5 @@
 4tune.pdx/
 build/
+sim/
 compile_commands.json
 .cache/
