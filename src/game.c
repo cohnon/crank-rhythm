@@ -255,7 +255,7 @@ void game_update() {
 
 	if (data.debug) {
 		float width = 100;
-		float rows = 4;
+		float rows = 3;
 		data.playdate->system->drawFPS(0, 0);
 
 		data.playdate->graphics->fillRect(400 - width, rows * 18 + 4, width, 240 - (rows * 18 + 4), kColorWhite);
@@ -276,9 +276,6 @@ void game_update() {
 
 		snprintf(buffer, 20, "pos: %d", data.debug_next_note_position);
 		data.playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 400 - width + 2, 2 + 18 * 2);
-
-		snprintf(buffer, 20, "tot: %d", data.debug_total_notes);
-		data.playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 400 - width + 2, 2 + 18 * 3);
 	}
 }
 

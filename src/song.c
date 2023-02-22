@@ -172,14 +172,17 @@ static int load_song(PlaydateAPI* playdate, struct SongPlayer* song_player, cons
 	float beat_time;
 	int read;
 	int file_read;
-	int count = 0;
-  while (count < 1000) {
-		count++;
+  while (level.note_count < 1000) {
 		playdate->file->seek(file, file_text_offset, SEEK_SET);
 		file_read = playdate->file->read(file, beatmap_text, 50);
 		sscanf(beatmap_text, "%d %d %d %f\n%n", &type, &color, &position, &beat_time, &read);
 
-		if (count == 1) {
+		beatmap_text[20] = 0;
+		if (file_read == 0) {
+			break;
+		}
+
+		if (level.note_count == 1) {
 			debug_log("1st note");
 			char buffer[10];
 			snprintf(buffer, 10, "type:%d", type);
@@ -190,11 +193,6 @@ static int load_song(PlaydateAPI* playdate, struct SongPlayer* song_player, cons
 			debug_log(buffer);
 			snprintf(buffer, 10, "time:%d", (int)beat_time);
 			debug_log(buffer);
-		}
-
-		beatmap_text[20] = 0;
-		if (file_read == 0) {
-			break;
 		}
 
 		level.notes[level.note_count].type = type;
@@ -208,7 +206,11 @@ static int load_song(PlaydateAPI* playdate, struct SongPlayer* song_player, cons
 		file_text_offset += read;
 		level.note_count += 1;
 	}
-	
+
+		
+	char buffer[10];
+	snprintf(buffer, 10, "tot:%d", level.note_count);
+	debug_log(buffer);
 	debug_log("Success");
 		
 	return 1;
@@ -328,6 +330,7 @@ void song_update(struct GameData* data) {
 	// debug
 	data->debug_next_note = level.notes[level.index].beat_time;
 	data->debug_next_note_position = level.notes[level.index].position;
+	data->debug_total_notes = level.note_count;
 
 	struct Note* note;
 	for (int i = level.index; i < level.note_count; ++i) {
