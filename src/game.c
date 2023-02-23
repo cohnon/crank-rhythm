@@ -201,9 +201,7 @@ static void menu_debug_callback(void* userdata) {
 void game_init() {
 	sp_init(&data.song_player, data.playdate);
 	song_set_data_ptr(&data);
-	
-	debug_log("Debug");
-	
+		
 	data.playdate->system->addMenuItem("Quit Song", menu_home_callback, NULL);
 	data.debug_menu = data.playdate->system->addCheckmarkMenuItem("Debug", 1, menu_debug_callback, NULL);
 	data.debug = 1;
@@ -262,25 +260,37 @@ void game_update() {
 		data.playdate->graphics->drawRect(400 - width, rows * 18 + 4, width, 240 - (rows * 18 + 4), kColorBlack);
 
 		for (int i = data.debug_log_start; i != data.debug_log_end; i = (i + 1) % 10) {
-			data.playdate->graphics->drawText(data.debug_log[i], 10, kASCIIEncoding, 400 - width + 2, (rows * 18 + 4) + (18 * ((i - data.debug_log_start + 10) % 10)));
+			data.playdate->graphics->drawText(data.debug_log[i], 15, kASCIIEncoding, 400 - width + 2, (rows * 18 + 4) + (18 * ((i - data.debug_log_start + 10) % 10)));
 		}
 
 		char buffer[20];
 		data.playdate->graphics->fillRect(400 - width, 0, width, rows * 18 + 4, kColorWhite);
 		data.playdate->graphics->drawRect(400 - width, 0, width, rows * 18 + 4, kColorBlack);
-		snprintf(buffer, 20, "time: %.1f", data.song_player.beat_time);
+		if (data.song_player.beat_time > 0.0f) {		
+			sprintf(buffer, "time: %d.%d", (int)data.song_player.beat_time, (int)((data.song_player.beat_time - (int)data.song_player.beat_time) * 10.0f + 0.5f));
+		} else {
+			sprintf(buffer, "time: 0.0");
+		}
 		data.playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 400 - width + 2, 2 + 18 * 0);
 		
-		snprintf(buffer, 20, "next: %d", (int)data.debug_next_note);
+		sprintf(buffer, "next: %d", (int)data.debug_next_note);
 		data.playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 400 - width + 2, 2 + 18 * 1);
 
-		snprintf(buffer, 20, "pos: %d", data.debug_next_note_position);
+		sprintf(buffer, "pos: %d", data.debug_next_note_position);
 		data.playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 400 - width + 2, 2 + 18 * 2);
 	}
 }
 
 void debug_log(const char* msg) {
-	strcpy(data.debug_log[data.debug_log_end], msg);
+	int i = 0;
+	for (; i < 14; ++i) {
+		if (msg[i] == '\n') {
+			break;
+		}
+		data.debug_log[data.debug_log_end][i] = msg[i];
+	}
+	data.debug_log[data.debug_log_end][i] = 0;
+
 	data.debug_log_end = (data.debug_log_end + 1) % 10;
 	if (data.debug_log_end == data.debug_log_start) {
 		data.debug_log_start += 1;

@@ -10,6 +10,9 @@
 // TODO Make sightreading based on time not beat time
 #define SIGHTREAD_DISTANCE (3.0f / 170.0f)
 
+// HACK
+struct GameData* d;
+
 struct Song level;
 
 int display_score;
@@ -118,10 +121,79 @@ static void get_note_position(int position, float progress, int* x, int* y) {
 	}
 }
 
+static int parse_int(const char* string, int* val) {
+	int index = 0;
+	*val = 0;
+	while (string[index] != ' ' && string[index] != '\n' && string[index] != 0) {
+		*val *= 10;
+		*val += string[index] - '0';
+
+		index += 1;
+	}
+
+	return index + 1;
+}
+
+static float parse_float(const char* string, float* val) {
+	int index = 0;
+	int decimal_index = -1;
+	*val = 0.0f;
+	while (string[index] != ' ' && string[index] != '\n' && string[index] != 0) {
+		if (decimal_index == -1 && string[index] == '.') {
+			decimal_index = index;
+			index += 1;
+			continue;
+		}
+		
+		if (decimal_index != -1) {
+			float decimal = powf(10.0f, (float)(index - decimal_index));
+			*val += (float)(string[index] - '0') / decimal;
+		} else {
+			*val *= 10.0f;
+			*val += (float)(string[index] - '0');
+		}
+		
+		index += 1;
+	}
+	return index + 1;
+}
+
+static int parse_string(const char* string, char* val) {
+	int index = 0;
+	while (string[index] != '\n' && string[index] != 0) {
+		val[index] = string[index];
+
+		index += 1;
+	}
+	
+	val[index] = 0;
+	
+	return index + 1;
+}
+
+// maybe scanf doesn't work??
+static int parse_header(const char* input, int* version, char* name, float* bpm, float* offset) {
+	int length = 0;
+	length += parse_int(input, version);
+	length += parse_string(input + length, name);
+	length += parse_float(input + length, bpm);	
+	length += parse_float(input + length, offset);
+	
+	return length;
+}
+
+static int parse_line(const char* line, int* type, int* color, int* position, float* beat_time) {
+	int length = 0;
+	length += parse_int(line + length, type);
+	length += parse_int(line + length, color);
+	length += parse_int(line + length, position);
+	length += parse_float(line + length, beat_time);
+
+	return length;
+}
+
 static int load_song(PlaydateAPI* playdate, struct SongPlayer* song_player, const char* path) {
 	
-	debug_log("Loading");
-
   char dir_path[100] = "songs/";
   strcat(dir_path, path);
   
@@ -140,13 +212,16 @@ static int load_song(PlaydateAPI* playdate, struct SongPlayer* song_player, cons
     return 0;
 	}
 
-	int version;
+	int version = 0;
 	char song_name[26];
-	float bpm;
-	float offset;
-	sscanf(beatmap_text, "%d\n%s\n%f\n%f\n%n", &version, song_name, &bpm, &offset, &file_text_offset);
+	float bpm = 0;
+	float offset = 0;
+	file_text_offset = parse_header(beatmap_text, &version, song_name, &bpm, &offset);	
 
 	debug_log(song_name);
+	char header_display_buffer[20];
+	sprintf(header_display_buffer, "%d %d.%d %d.%d", version, (int)bpm, (int)((bpm - (int)bpm)*10.0f + 0.5f), (int)offset, (int)((offset - (int)offset)*10.0f + 0.5f));
+	debug_log(header_display_buffer);
 		
   char song_full_path[100];
   strcpy(song_full_path, dir_path);
@@ -175,23 +250,26 @@ static int load_song(PlaydateAPI* playdate, struct SongPlayer* song_player, cons
   while (level.note_count < 1000) {
 		playdate->file->seek(file, file_text_offset, SEEK_SET);
 		file_read = playdate->file->read(file, beatmap_text, 50);
-		sscanf(beatmap_text, "%d %d %d %f\n%n", &type, &color, &position, &beat_time, &read);
+		read = parse_line(beatmap_text, &type, &color, &position, &beat_time);
+
+		if (level.note_count == 0) {
+			debug_log(beatmap_text);
+		}
 
 		beatmap_text[20] = 0;
 		if (file_read == 0) {
 			break;
 		}
 
-		if (level.note_count == 1) {
-			debug_log("1st note");
-			char buffer[10];
-			snprintf(buffer, 10, "type:%d", type);
+		if (level.note_count == 0) {
+			char buffer[15];
+			sprintf(buffer, "type: %d", type);
 			debug_log(buffer);
-			snprintf(buffer, 10, "col:%d", color);
+			sprintf(buffer, "col: %d", color);
 			debug_log(buffer);
-			snprintf(buffer, 10, "pos:%d", position);
+			sprintf(buffer, "pos: %d", position);
 			debug_log(buffer);
-			snprintf(buffer, 10, "time:%d", (int)beat_time);
+			sprintf(buffer, "time: %d.%d", (int)beat_time, (int)((beat_time - (int)beat_time) * 10.0f + 0.5f));
 			debug_log(buffer);
 		}
 
@@ -208,10 +286,9 @@ static int load_song(PlaydateAPI* playdate, struct SongPlayer* song_player, cons
 	}
 
 		
-	char buffer[10];
-	snprintf(buffer, 10, "tot:%d", level.note_count);
+	char buffer[15];
+	sprintf(buffer, "#notes: %d", level.note_count);
 	debug_log(buffer);
-	debug_log("Success");
 		
 	return 1;
 }
@@ -276,6 +353,10 @@ static void reset() {
 	level.ok_count = 0;
 	level.good_count = 0;
 	level.perfect_count = 0;
+	level.normal_hit = 0;
+	level.normal_miss = 0;
+	level.danger_hit = 0;
+	level.danger_miss = 0;
 	level.combo = 0;
 	level.index = 0;
 	level.health = MAX_HEALTH;
@@ -283,9 +364,6 @@ static void reset() {
 	particle_start = 0;
 	failed_to_load_song = 0;
 }
-
-// HACK
-struct GameData* d;
 
 static void song_finish_callback(SoundSource* source) {
 	level.health = 0;
@@ -395,10 +473,12 @@ void song_update(struct GameData* data) {
   				level.score += 50;
 					level.health += 3;
 					level.combo += 1;
+					level.normal_hit += 1;
         } else {
 					level.combo = 0;
 					missed = 1;
 					level.health -= 5;
+					level.normal_miss += 1;
 				}
 			}
 		} else if (note->type == NOTE_DANGER) {
@@ -409,10 +489,12 @@ void song_update(struct GameData* data) {
 					level.health -= 20;
 					missed = 1;
 					level.combo = 0;
+					level.danger_miss += 1;
 				} else {
 					level.score += 25;
 					level.health += 10;
 					level.combo += 1;
+					level.danger_hit += 1;
 				}
 			}
 		}
@@ -423,8 +505,8 @@ void song_update(struct GameData* data) {
 	}
 	
 	if (level.ok_count + level.good_count + level.perfect_count + level.miss_count > 0) {
-		level.accuracy = (float)level.ok_count * 10.0f + (float)level.good_count * 30.0f + (float)level.perfect_count * 100.0f;
-		level.accuracy /= (float)(level.ok_count + level.good_count + level.perfect_count + level.miss_count) * 100.0f;
+		level.accuracy = (float)level.ok_count * 10.0f + (float)level.good_count * 30.0f + (float)level.perfect_count * 100.0f + (float)level.danger_hit * 25.0f + (float)level.normal_hit * 50.0f;
+		level.accuracy /= (float)(level.ok_count + level.good_count + level.perfect_count + level.miss_count) * 100.0f + (float)(level.danger_hit + level.danger_miss) * 25.0f + (float)(level.normal_hit + level.normal_miss) * 50.0f;
 	} else {
 		level.accuracy = 0.0f;
 	}
@@ -463,7 +545,7 @@ void song_draw(struct GameData* data) {
 		data->playdate->graphics->clear(kColorWhite);
 		data->playdate->graphics->drawText("Game Over", 9, kASCIIEncoding, 200, 120);
 		char buffer[100];
-		snprintf(buffer, 100, "Score: %d", level.score);
+		sprintf(buffer, "Score: %d", level.score);
 		data->playdate->graphics->drawText(buffer, 99, kASCIIEncoding, 200, 150);
 		if (failed_to_load_song) {
 			data->playdate->graphics->drawText("Failed to open song", 99, kASCIIEncoding, 0, 10);
@@ -533,7 +615,7 @@ void song_draw(struct GameData* data) {
 		int diff = level.score - display_score;
 		display_score += (diff + 1) >> 1;
 	}
-	snprintf(display_buffer, 50, "%d", display_score);
+	sprintf(display_buffer, "%d", display_score);
 	data->playdate->graphics->drawText(display_buffer, 50, kASCIIEncoding, 200 - data->playdate->graphics->getTextWidth(data->font, display_buffer, 26, kASCIIEncoding, 0) / 2.0f, 200);
 	
 	// name
@@ -558,7 +640,8 @@ void song_draw(struct GameData* data) {
 	data->playdate->graphics->fillEllipse(200 - 50 - 8 - 18 + offset, 240 - 3 - 18, 18, 18, 0.0f, 360.0f * data->song_player.percentage, kColorBlack);
 	
 	// accuracy
-	snprintf(display_buffer, 50, "%.2f%%", level.accuracy * 100.0f);
+	float accuracy = level.accuracy * 100.0f;
+	sprintf(display_buffer, "%d.%d%%", (int)accuracy, (int)((accuracy - (int)(accuracy)) * 100.0f + 0.5f));
 	// data->playdate->graphics->setFont(data->accuracy_font);
 	data->playdate->graphics->drawText(display_buffer, 50, kASCIIEncoding, 200 + 50 + 5 + offset, 240 - data->playdate->graphics->getFontHeight(data->font));
 	// data->playdate->graphics->setFont(data->font);
@@ -590,7 +673,7 @@ void song_draw(struct GameData* data) {
 	
 	// combo
 	if (level.combo > 0) {
-		snprintf(display_buffer, 50, "Combo %d", level.combo);
+		sprintf(display_buffer, "Combo %d", level.combo);
 		data->playdate->graphics->drawText(display_buffer, 50, kASCIIEncoding, 200 - data->playdate->graphics->getTextWidth(data->font, display_buffer, 50, kASCIIEncoding, 0) / 2, height - 20 - (prompt_y >> 1));
 	}
 }

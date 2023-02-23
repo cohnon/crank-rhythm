@@ -50,6 +50,10 @@ struct Song {
 	int ok_count;
 	int good_count;
 	int perfect_count;
+	int danger_hit;
+	int danger_miss;
+	int normal_hit;
+	int normal_miss;
 	int note_count;
 	int combo;
 	float accuracy;

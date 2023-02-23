@@ -28,7 +28,7 @@ struct GameData {
   float debug_next_note;
   int debug_next_note_position;
   int debug_total_notes;
-  char debug_log[10][10];
+  char debug_log[10][15];
   int debug_log_start;
   int debug_log_end;
 };
