@@ -1,11 +1,17 @@
 body {
-  color: white;
-  background: #111;
-  font-family: monospace;
-  font-size: 1.2em;
+  color: rgb(233, 233, 233);
+  background: #1b1b1b;
+  font-family: Helvetica, sans-serif;
+  font-size: 1em;
+  padding: 10px 20px;
 }
 
 h1 {
+  font-family: 'Jetbrains Mono';
+  color: #e3ee45;
+}
+
+a {
   color: #e3ee45;
 }
 
@@ -14,5 +20,7 @@ img {
   border: 1px solid white;
 }
 
-b {
+code {
+  background-color: #333;
+  padding: 3px 5px;
 }
