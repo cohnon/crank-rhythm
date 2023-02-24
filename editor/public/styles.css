@@ -1,0 +1,187 @@
+* {
+  padding: 0;
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  -webkit-box-shadow: inset 0 0 2px rgba(0,0,0,0.3);
+}
+
+::-webkit-scrollbar-thumb {
+background-color: #807c51;
+/* outline: 1px solid rgb(255, 255, 255); */
+}
+
+#song-controls #zoom-slider, #song-controls #speed-slider {
+  flex-grow: 0;
+  width: 100px;
+  padding: 0;
+}
+
+button:hover {
+  cursor: pointer;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#waveform {
+  background-color: #111;
+  width: 100vw;
+  height: 80px;
+  position: relative;
+  pointer-events: all;
+}
+
+#controls {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: #111;
+  border-bottom: 2px solid #e3ee45;
+}
+
+#controls h1 {
+  font-size: 1em;
+  margin-right: 20px;
+  color: rgb(218, 218, 218);
+}
+
+#controls #bpm-btn {
+  margin-right: 20px;
+}
+
+#controls a {
+  color: #e3ee45;
+}
+
+#space {
+  flex-grow: 1;
+}
+
+#bpm-btn {
+  margin-left: 10px;
+}
+
+#bpm-display {
+  color: #fff;
+}
+
+.control-btn {
+  padding: 5px 15px;
+  background: #f8ea2a;
+  border: none;
+  border-radius: 20px;
+  margin-right: 10px;
+  font-weight: bold;
+}
+
+#song-controls .control-btn {
+  flex-grow: 0.5;
+}
+
+.control-btn:hover {
+  background-color: #a19814;
+}
+
+#song-controls input {
+  background-color: #d1d1d1;
+  border: none;
+  padding: 5px 8px;
+  border-radius: 4px;
+  margin-left: 10px;
+  width: 50px;
+  flex-grow: 1;
+}
+
+#song-controls {
+  display: flex;
+  padding: 10px;
+  align-items: center;
+  background-color: #000000;
+}
+
+#preview {
+  flex-grow: 1;
+  height: 10px;
+  width: 100%;
+}
+
+#timers {
+  display: flex;
+  justify-content: center;
+  background-color: #000000;
+}
+
+#timers span {
+  display: flex;
+  margin: 0 15px;
+}
+
+#timers p {
+  color:rgb(201, 201, 201);
+  font-family: 'JetBrains Mono';
+}
+
+#note-controls {
+  width: 300px;
+  position: absolute;
+  padding-top: 10px;
+  bottom: 10px;
+  left: 50vw;
+  background-color: #111;
+  transform: translate(-50%, 0);
+  border-radius: 10px;
+  transition: opacity 100ms ease;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  opacity: 0.5;
+}
+
+#note-controls:hover {
+  opacity: 1;
+}
+
+#note-controls input {
+  margin-bottom: 10px; 
+}
+
+#note-controls label {
+  color: white;
+}
+
+#note-controls #delete-btn {
+  background-color: rgb(255, 97, 97);
+}
+
+#note-controls button {
+  border: none;
+  padding: 5px;
+  border-radius: 6px;
+  font-weight: bold;
+}
+
+#note-controls button:hover {
+  opacity: 0.5;
+}
+
+#overlay {
+  position: absolute;
+  pointer-events: all;
+  top: 0;
+  left: 0;
+  height: 72px;
+  width: 100%;
+  z-index: 100;
+}
