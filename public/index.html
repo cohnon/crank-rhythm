@@ -5,13 +5,76 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>4Tune Editor</title>
+  <script src="ws.js"></script>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header>4Tune Editor</header>
-  <input id="bpm-input" placeholder="bpm" type="text">
-  <textarea id="output"></textarea>
+  <div id="controls">
+    <h1>4Tune Editor</h1>
+    <button id="save-btn" class="control-btn">Save Beatmap</button>
+    <input id="load-btn" type="file" accept="audio/*" />
+    <div id="space"></div>
+    <p id="bpm-display">0</p>
+    <button id="bpm-btn">Check BPM</button>
+    <a href="help.html">Help</a>
+  </div>
+
+  <div id="song-controls">
+    <button id="play-btn" class="control-btn">Play</button>
+    <input type="range" min="1" max="500" value="250" step="1" id="zoom-slider">
+    <input type="range" min="0.2" max="1" value="1" step="0.05" id="speed-slider">
+    <input id="name-input" type="text" placeholder="Song Name">
+    <input id="bpm-input" type="text" placeholder="BPM" value="100">
+    <input id="offset-input" type="text" placeholder="Offset" value="0">
+  </div>
+  <div id="waveform"></div>
+
+  <div id="timers">
+    <span>
+      <p>Time: </p>
+      <p id="time">0.00</p>
+    </span>
+    <span>
+      <p>Beat Time: </p>
+      <p id="beat-time">0.00</p>
+    </span>
+  </div>
+  <div id="note-controls">
+    <div class="column">
+      <button id="delete-btn">Delete</button>
+    </div>
+    <div class="column">
+      <input type="radio" id="normal" checked="true" name="note-type" value="Normal">
+      <label for="normal">Normal</label><br>
+      <input type="radio" id="danger" name="note-type" value="Danger">
+      <label for="danger">Danger</label><br>
+      <input type="radio" id="click" name="note-type" value="Click">
+      <label for="click">Click</label>
+    </div>
+    <div class="column">
+      <input type="radio" id="black" checked="true" name="note-color" value="Black">
+      <label for="black">Black</label><br>
+      <input type="radio" id="white" name="note-color" value="White">
+      <label for="white">White</label>
+    </div>
+    <div class="column" style="display: flex; flex-direction: column;">
+      <input type="radio" id="L1" checked="true" name="note-pos" value="L1">
+      <input type="radio" id="L2"                name="note-pos" value="L2">
+      <input type="radio" id="L3"                name="note-pos" value="L3">
+      <input type="radio" id="L4"                name="note-pos" value="L4">
+      <input type="radio" id="L5"                name="note-pos" value="L5">
+    </div>
+    <div class="column" style="display: flex; flex-direction: column;">
+      <input type="radio" id="R1"                name="note-pos" value="R1">
+      <input type="radio" id="R2"                name="note-pos" value="R2">
+      <input type="radio" id="R3"                name="note-pos" value="R3">
+      <input type="radio" id="R4"                name="note-pos" value="R4">
+      <input type="radio" id="R5"                name="note-pos" value="R5">
+    </div>
+  </div>
+  <canvas id="preview"></canvas>
+
 
   <script src="index.js"></script>
-  <audio id="song" controls src="../psychogenesis.mp3"></audio>
 </body>
 </html>

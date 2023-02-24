@@ -1,0 +1,18 @@
+body {
+  color: white;
+  background: #111;
+  font-family: monospace;
+  font-size: 1.2em;
+}
+
+h1 {
+  color: #e3ee45;
+}
+
+img {
+  width: 100%;
+  border: 1px solid white;
+}
+
+b {
+}
