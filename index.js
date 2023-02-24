@@ -358,7 +358,27 @@ function drawNotes() {
 function drawNote(ctx, note, xPos, yPos, selected = false) {
 
   if (note.type === NoteType.Danger) {
+    ctx.beginPath();
 
+    ctx.moveTo(xPos - 15, yPos - 15);
+    ctx.lineTo(xPos + 15, yPos + 15);
+
+    ctx.moveTo(xPos + 15, yPos - 15);
+    ctx.lineTo(xPos - 15, yPos + 15);
+    if (note.color === NoteColor.White) {
+      ctx.lineWidth = 18;
+      ctx.strokeStyle = '#342c2c';
+      ctx.stroke();
+    }
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = note.color === NoteColor.Black ? '#342c2c' : '#b4acac'; 
+    ctx.stroke();
+
+    if (selected) {
+      ctx.strokeStyle = '#f0f';
+      ctx.lineWidth = 5;
+      ctx.stroke();
+    }
   } else {
     ctx.beginPath();
     ctx.arc(xPos, yPos, 15, 0, Math.PI * 2, false);
