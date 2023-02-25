@@ -412,7 +412,7 @@ function drawNote(ctx, note, xPos, yPos, selected = false) {
 function drawOverlay() {
   overlayContext.fillStyle = '#f00'
   notes.forEach(note => {
-    let xPos = note.beatTime * 60 / Number.parseFloat(bpmInput.value) * wavesurfer.params.minPxPerSec;
+    let xPos = (note.beatTime * 60 / Number.parseFloat(bpmInput.value) + Number.parseFloat(offsetInput.value)) * wavesurfer.params.minPxPerSec;
     xPos -= waveform.firstChild.scrollLeft;
     const yPos = 36;
 
