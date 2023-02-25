@@ -230,7 +230,7 @@ let clickingNote = false;
 let clickPosX;
 let clickTime;
 overlayCanvas.addEventListener('mousedown', e => {
-  const clickedBeatTime = (e.clientX + waveform.firstChild.scrollLeft - 15) / wavesurfer.params.minPxPerSec * Number.parseFloat(bpmInput.value) / 60;
+  const clickedBeatTime = ((e.clientX + waveform.firstChild.scrollLeft - 15) / wavesurfer.params.minPxPerSec - Number.parseFloat(offsetInput.value)) * Number.parseFloat(bpmInput.value) / 60;
   const existingNote = findNoteByBeatTime(clickedBeatTime);
   const rect = overlayCanvas.getBoundingClientRect();
   const mouseY = e.clientY - rect.top;
