@@ -203,8 +203,7 @@ void game_init() {
 	song_set_data_ptr(&data);
 		
 	data.playdate->system->addMenuItem("Quit Song", menu_home_callback, NULL);
-	data.debug_menu = data.playdate->system->addCheckmarkMenuItem("Debug", 1, menu_debug_callback, NULL);
-	data.debug = 1;
+	data.debug_menu = data.playdate->system->addCheckmarkMenuItem("Debug", 0, menu_debug_callback, NULL);
 	
 	data.state = GAME_STATE_MAIN_MENU;
 	data.first_update = 1;
