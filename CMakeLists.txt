@@ -31,9 +31,9 @@ set(PLAYDATE_GAME_DEVICE 4tune_DEVICE)
 project(${PLAYDATE_GAME_NAME} C ASM)
 
 if (TOOLCHAIN STREQUAL "armgcc")
-	add_executable(${PLAYDATE_GAME_DEVICE} ${SDK}/C_API/buildsupport/setup.c src/main.c src/song_player.c src/game.c src/song.c)
+	add_executable(${PLAYDATE_GAME_DEVICE} ${SDK}/C_API/buildsupport/setup.c src/main.c src/song_player.c src/game.c src/song.c src/scene.c src/drawing.c)
 else()
-	add_library(${PLAYDATE_GAME_NAME} SHARED src/main.c src/song_player.c src/game.c src/song.c)
+	add_library(${PLAYDATE_GAME_NAME} SHARED src/main.c src/song_player.c src/game.c src/song.c src/scene.c src/drawing.c)
 endif()
 
 include(${SDK}/C_API/buildsupport/playdate_game.cmake)

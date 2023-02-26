@@ -60,10 +60,10 @@ struct Song {
 	struct Note* notes;
 };
 
-void song_set_data_ptr(struct GameData* data);
-void song_open(PlaydateAPI* playdate, struct SongPlayer* song_player, const char* path);
-void song_close(struct GameData* data);
-void song_update(struct GameData* data);
-void song_draw(struct GameData* data);
+void song_set_data_ptr(GameData* data);
+void song_open(GameData* data, struct SongPlayer* song_player, const char* path);
+void song_close(GameData* data);
+void song_update(GameData* data);
+void song_draw(GameData* data);
 
 #endif

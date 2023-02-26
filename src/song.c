@@ -1,4 +1,6 @@
 #include "song.h"
+#include "drawing.h"
+
 #include "pd_api/pd_api_gfx.h"
 #include <stdint.h>
 #include <assert.h>
@@ -192,8 +194,9 @@ static int parse_line(const char* line, int* type, int* color, int* position, fl
 	return length;
 }
 
-static int load_song(PlaydateAPI* playdate, struct SongPlayer* song_player, const char* path) {
-	
+static int load_song(GameData* data, struct SongPlayer* song_player, const char* path) {
+	PlaydateAPI* playdate = data->playdate;
+
   char dir_path[100] = "songs/";
   strcat(dir_path, path);
   
@@ -227,7 +230,7 @@ static int load_song(PlaydateAPI* playdate, struct SongPlayer* song_player, cons
   strcpy(song_full_path, dir_path);
   strcat(song_full_path, "/audio");
   
-  int sp_load_result = sp_load(song_player, song_full_path, bpm, offset);
+  int sp_load_result = sp_load(data, song_player, song_full_path, bpm, offset);
 	
 	if (!sp_load_result) {
 		playdate->system->logToConsole("Failed to load audio file");
@@ -374,20 +377,20 @@ void song_set_data_ptr(struct GameData* data) {
 	level.notes = (struct Note*)data->playdate->system->realloc(NULL, sizeof(struct Note) * 1000);
 }
 
-void song_open(struct PlaydateAPI* playdate, struct SongPlayer* song_player, const char* path) {
+void song_open(GameData* data, struct SongPlayer* song_player, const char* path) {
 	reset();
-  int load_song_result = load_song(playdate, song_player, path);
+  int load_song_result = load_song(data, song_player, path);
 	if (!load_song_result) {
 		level.health = 0;
 		failed_to_load_song = 1;
 		return;
 	}
-	sp_play(song_player);
-	playdate->sound->fileplayer->setFinishCallback(song_player->current_song, song_finish_callback);
+	sp_play(data, song_player);
+	data->playdate->sound->fileplayer->setFinishCallback(song_player->current_song, song_finish_callback);
 }
 
 void song_close(struct GameData* data) {
-	sp_stop(&data->song_player);
+	sp_stop(data, &data->song_player);
 }
 
 void song_update(struct GameData* data) {	
@@ -399,7 +402,7 @@ void song_update(struct GameData* data) {
 			data->state = GAME_STATE_SONG_LIST;
 			data->first_update = 1;
 		}
-		sp_stop(&data->song_player);
+		sp_stop(data, &data->song_player);
 		return;
 	}
 	
@@ -512,37 +515,9 @@ void song_update(struct GameData* data) {
 	}
 }
 
-static void draw_disk(struct GameData* data) {
-	float angle = data->playdate->system->getCrankAngle();
-
-	int size = DISK_SIZE;
-	PDButtons buttons;
-	data->playdate->system->getButtonState(&buttons, NULL, NULL);
-  
-	if (buttons > 0) {
-		size = DISK_SIZE_MAX;
-	}
-  
-	int offset = (DISK_SIZE_MAX - size) / 2;
-	int bounds_x = 400 / 2 - DISK_SIZE_MAX / 2;
-	int bounds_y = 240 / 2 - DISK_SIZE_MAX / 2;
-
-	data->playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, 0.0f, 0.0f, kColorWhite);
-
-	// white
-	data->playdate->graphics->drawEllipse(bounds_x + offset, bounds_y + offset, size, size, 2, angle + 0.0f, angle + 90.0f, kColorBlack);
-	data->playdate->graphics->drawEllipse(bounds_x + offset, bounds_y + offset, size, size, 2, angle + 180.0f, angle + 270.0f, kColorBlack);
-	// black
-	data->playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, angle + 270.0f, angle + 360.0f, kColorBlack);
-	data->playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, angle + 90.0f, angle + 180.0f, kColorBlack);
-}
-
-
 void song_draw(struct GameData* data) {
-	const struct playdate_graphics* graphics = data->playdate->graphics;
-	
+	data->playdate->graphics->clear(kColorWhite);
 	if (level.health < 1) {
-		data->playdate->graphics->clear(kColorWhite);
 		data->playdate->graphics->drawText("Game Over", 9, kASCIIEncoding, 200, 120);
 		char buffer[100];
 		sprintf(buffer, "Score: %d", level.score);
@@ -568,42 +543,12 @@ void song_draw(struct GameData* data) {
 		progress = 1.0f - (note->beat_time - data->song_player.beat_time) / (data->song_player.bpm * SIGHTREAD_DISTANCE);
 		get_note_position(note->position, progress, &x, &y);
 				
-		// playdate->graphics->drawBitmap(note_bitmap, (int)x - 12, (int)y - 12, kBitmapUnflipped);
-
-		switch (note->type) {
-			case NOTE_NORMAL: {
-				int note_size = 14;
-				if (note->color == NOTE_WHITE) {
-					graphics->drawEllipse(x - (note_size >> 1), y - (note_size >> 1), note_size, note_size, 1, 0.0f, 0.0f, kColorBlack);				
-				} else {
-					graphics->fillEllipse(x - (note_size >> 1), y - (note_size >> 1), note_size, note_size, 0.0f, 0.0f, kColorBlack);
-				}
-				break;
-			}
-			case NOTE_CLICK: {
-				int note_size = 16;
-				if (note->color == NOTE_WHITE) {
-					graphics->drawEllipse(x - (note_size >> 1), y - (note_size >> 1), note_size, note_size, 1, 0.0f, 0.0f, kColorBlack);
-				} else {
-					graphics->fillEllipse(x - (note_size >> 1), y - (note_size >> 1), note_size, note_size, 0.0f, 0.0f, kColorBlack);
-				}
-				
-				graphics->drawEllipse(x - (note_size >> 1) - 6, y - (note_size >> 1) - 6, note_size + 12, note_size + 12, 2, 0.0f, 0.0f, kColorBlack);
-				break;
-			}
-			case NOTE_DANGER:
-				if (note->color == NOTE_WHITE) {
-					graphics->drawBitmap(data->white_x_bitmap, x - 12, y - 12, kBitmapUnflipped);
-				} else {
-					graphics->drawBitmap(data->black_x_bitmap, x - 12, y - 12, kBitmapUnflipped);
-				}
-				break;
-			default:
-				break;
-		}		
+		draw_note(data, x, y, note->type, note->color);
 	}
-	
-	draw_disk(data);
+
+	PDButtons pressed;
+	data->playdate->system->getButtonState(&pressed, NULL, NULL);	
+	draw_disk(data, 200, 120, data->playdate->system->getCrankAngle(), pressed > 0);
 	
 	particles_draw(data);
 	

@@ -3,8 +3,9 @@
 
 #include "pd_api.h"
 
+typedef struct GameData GameData;
+
 struct SongPlayer {
-  PlaydateAPI* pd;
   float bpm;
   float length;
   float sec_per_beat;
@@ -18,10 +19,9 @@ struct SongPlayer {
   int playing;
 };
 
-void sp_init(struct SongPlayer* player, PlaydateAPI* playdate);
-int sp_load(struct SongPlayer* player, const char* path, const float bpm, const float offset);
-void sp_play(struct SongPlayer* player);
-void sp_stop(struct SongPlayer* player);
-void sp_update(struct SongPlayer* player);
+int sp_load(GameData* data, struct SongPlayer* player, const char* path, const float bpm, const float offset);
+void sp_play(GameData* data, struct SongPlayer* player);
+void sp_stop(GameData* data, struct SongPlayer* player);
+void sp_update(GameData* data, struct SongPlayer* player);
 
 #endif

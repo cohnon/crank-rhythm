@@ -1,5 +1,6 @@
 #include "game.h"
 
+#include "drawing.h"
 #include "pd_api/pd_api_gfx.h"
 #include "song.h"
 #include "song_player.h"
@@ -22,6 +23,7 @@ void game_setup_pd(PlaydateAPI* playdate) {
 
 static void get_song(const char* filename, void* userdata) {
 	strcpy(map_ids[map_index], filename);
+	// strcpy(data.songs[map_index].path, filename);
 
 	int i = 0;
 	while (1) {
@@ -45,7 +47,6 @@ static void update_tutorial() {
 	if (data.first_update) {
 		data.first_update = 0;
 		data.playdate->graphics->clear(kColorWhite);
-		// data.playdate->graphics->drawText("Tutorial", 10, kASCIIEncoding, 5, 5);
 		data.playdate->graphics->drawText("Spin the crank to spin the disk", 50, kASCIIEncoding, 5, 25);
 		data.playdate->graphics->drawText("Allign the disk color with the incoming notes", 50, kASCIIEncoding, 5, 55);
 		data.playdate->graphics->drawEllipse(5, 85, 16, 16, 2, 0.0f, 0.0f, kColorBlack);
@@ -64,25 +65,62 @@ static void update_tutorial() {
 	}
 }
 
+typedef struct MenuNote {
+	float x;
+	uint8_t y;
+	uint8_t type;
+	uint8_t color;
+	uint8_t sin_offset;
+} MenuNote;
+MenuNote menu_notes[15];
+int rng_y[12] = {50, 70, 200, 210, 140, 190, 100, 8, 120, 30, 180, 120};
+int rng_type[5] = {0, 1, 0, 2, 0};
+float sin_vals[11] = {0, 2, 4, 4, 2, 0, -3, -5, -5, -3, 0};
+
 static void update_main_menu() {
 	if (data.first_update) {
+		data.playdate->sound->fileplayer->loadIntoPlayer(data.fileplayer, "audio/menu");
+		data.playdate->sound->fileplayer->play(data.fileplayer, 0);
+
 		data.first_update = 0;
-		data.playdate->graphics->tileBitmap(data.bg_tile_bitmap, 0, 0, 400, 240, kBitmapUnflipped);
-		data.playdate->graphics->drawText("4Tune", 5, kASCIIEncoding, 200, 120);
-		data.playdate->graphics->drawText("press any button", 16, kASCIIEncoding, 200, 150);
+
+		for (int i = 0; i < 15; ++i) {
+			MenuNote* note = &menu_notes[i];
+			note->y = (i * 2) % 12;
+			note->type = (i * 3) % 5;
+			note->color = (i * 7) % 2;
+			note->x = i * 50;
+			note->sin_offset = i * 3;
+		}
 	}
+
+	data.playdate->graphics->clear(kColorWhite);
+	for (int i = 0; i < 15; ++i) {
+		MenuNote* note = &menu_notes[i];
+		note->x = (note->x + ((float)rng_y[note->y] / 80.0f) + 1.5f);
+		if (note->x > 500) {
+			note->x = 0;
+			note->y = (note->y + 1) % 12;
+			note->type = (note->type + 1) % 5;
+			note->color = (note->color + 1) % 2;
+		}
+		draw_note(&data, 420 - (int)note->x, rng_y[note->y] + sin_vals[((data.frame + note->sin_offset) / 10) % 11], rng_type[note->type], note->color);
+	}	
 	
-	if (data.frame % 4 == 0) {
-		int offset = -32 + ((data.frame >> 2) % 32);
-		data.playdate->graphics->tileBitmap(data.bg_tile_bitmap, offset, offset, 432, 262, kBitmapUnflipped);
-		data.playdate->graphics->drawText("4Tune", 5, kASCIIEncoding, 200, 120);
-		data.playdate->graphics->drawText("press any button", 16, kASCIIEncoding, 200, 150);
-	}
-	
+	data.playdate->graphics->setDrawMode(kDrawModeNXOR);
+	data.playdate->graphics->drawBitmap(data.title_bitmaps[(data.frame / 10) % 2], 200 - (196 / 2), 50, kBitmapUnflipped);
+	data.playdate->graphics->setDrawMode(kDrawModeCopy);
+	int left = 200 - (data.playdate->graphics->getTextWidth(data.basic_font, "CRANK TO START", 16, kASCIIEncoding, 0) / 2);
+	int top = 230 - data.playdate->graphics->getFontHeight(data.basic_font) - ((data.frame / 20) % 2) * 2;
+	data.playdate->graphics->setFont(data.basic_font);
+	data.playdate->graphics->drawText("CRANK TO START", 16, kASCIIEncoding, left, top);
+	data.playdate->graphics->setFont(data.font);
+		
   PDButtons buttons;
   data.playdate->system->getButtonState(NULL, &buttons, NULL);
 	
 	if (buttons > 0) {
+		data.playdate->sound->sampleplayer->play(data.sound_effect, 1, 1.0);
 		data.state = GAME_STATE_SONG_LIST;
 		data.first_update = 1;
 	}
@@ -92,18 +130,7 @@ static void update_song_list() {
 	float crank_angle = data.playdate->system->getCrankAngle();
 	
 	if (data.first_update) {
-		data.playdate->graphics->clear(kColorWhite);
 		data.first_update = 0;
-		for (int i = 0; i < map_index; ++i) {
-			data.playdate->graphics->drawText(map_ids[i], 100, kASCIIEncoding, 13, 20 + 20 * i);
-		}
-	
-		data.playdate->graphics->fillRect(
-			10, 19 + 20 * map_select,
-			380, 20,
-			kColorXOR
-		);
-		
 		map_select_range = crank_angle;
 	}
 	
@@ -134,6 +161,24 @@ static void update_song_list() {
 		map_select_range = crank_angle;
 	}
 	
+	data.playdate->graphics->clear(kColorWhite);
+	int points[8] = {0, 0, 150, 0, 130, 240, 0, 240};
+	data.playdate->graphics->fillPolygon(4, points, kColorBlack, kPolygonFillNonZero);
+	data.playdate->graphics->setDrawMode(kDrawModeNXOR);
+	for (int i = 0; i < map_index; ++i) {
+		data.playdate->graphics->drawText(map_ids[i], 100, kASCIIEncoding, 13, 20 + 30 * i);
+	}
+	data.playdate->graphics->setDrawMode(kDrawModeCopy);
+
+	int length = 150;
+	data.playdate->graphics->fillRect(
+		0, 19 + 30 * map_select,
+		length + 15, 30,
+		kColorXOR
+	);
+	
+	data.playdate->graphics->fillEllipse(length, 19 + 30 * map_select, 30, 30, 0.0f, 360.0f, kColorBlack);
+		
 	if (pressed & kButtonDown) {
 		map_select += 1;
 		if (map_select == map_index) {
@@ -152,7 +197,8 @@ static void update_song_list() {
 			data.first_update = 1;
 			return;
 		}
-		song_open(data.playdate, &data.song_player, map_ids[map_select]);
+		song_open(&data, &data.song_player, map_ids[map_select]);
+		data.playdate->sound->fileplayer->stop(data.fileplayer);
 		data.state = GAME_STATE_SONG;
 		data.first_update = 1;
 	}
@@ -160,29 +206,10 @@ static void update_song_list() {
 		data.state = GAME_STATE_MAIN_MENU;
 		data.first_update = 1;
 	}
-	
-	if (pressed > 0 || scrolled_with_crank) {
-		data.playdate->graphics->fillRect(
-			10, 19 + 20 * prev,
-			380, 20,
-			kColorXOR
-		);
-	
-		data.playdate->graphics->fillRect(
-			10, 19 + 20 * map_select,
-			380, 20,
-			kColorXOR
-		);
-	}
 }
 
-void update_song() {	
-  PDButtons pressed;
-  data.playdate->system->getButtonState(NULL, &pressed, NULL);
-		
-	data.playdate->graphics->clear(kColorWhite);
-			
-	sp_update(&data.song_player);
+void update_song() {						
+	sp_update(&data, &data.song_player);
 	song_update(&data);
 	song_draw(&data);
 }
@@ -199,7 +226,6 @@ static void menu_debug_callback(void* userdata) {
 }
 
 void game_init() {
-	sp_init(&data.song_player, data.playdate);
 	song_set_data_ptr(&data);
 		
 	data.playdate->system->addMenuItem("Quit Song", menu_home_callback, NULL);
@@ -207,11 +233,19 @@ void game_init() {
 	
 	data.state = GAME_STATE_MAIN_MENU;
 	data.first_update = 1;
-			
+
+	data.fileplayer = data.playdate->sound->fileplayer->newPlayer();
+	data.sound_effect = data.playdate->sound->sampleplayer->newPlayer();
+	// HACK: this never frees the memory for start.wav
+	data.playdate->sound->sampleplayer->setSample(data.sound_effect, data.playdate->sound->sample->load("audio/start"));
+
 	const char* err;
 	data.font = data.playdate->graphics->loadFont(fontpath, &err);
+	data.basic_font = data.playdate->graphics->loadFont("fonts/Basic.pft", &err);
 	data.playdate->graphics->setFont(data.font);
 
+	data.title_bitmaps[0] = data.playdate->graphics->loadBitmap("images/title1.png", &err);
+	data.title_bitmaps[1] = data.playdate->graphics->loadBitmap("images/title2.png", &err);
 	data.black_x_bitmap = data.playdate->graphics->loadBitmap("x.png", &err);
 	data.white_x_bitmap = data.playdate->graphics->loadBitmap("white_x.png", &err);
 	data.bg_tile_bitmap = data.playdate->graphics->loadBitmap("bg-tiles.png", &err);
@@ -278,6 +312,10 @@ void game_update() {
 		sprintf(buffer, "pos: %d", data.debug_next_note_position);
 		data.playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 400 - width + 2, 2 + 18 * 2);
 	}
+}
+
+void game_change_state(game_state state) {
+	data.state = state;
 }
 
 void debug_log(const char* msg) {
