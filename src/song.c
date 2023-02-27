@@ -2,6 +2,7 @@
 #include "drawing.h"
 
 #include "pd_api/pd_api_gfx.h"
+#include "scene.h"
 #include <stdint.h>
 #include <assert.h>
 #include <stdio.h>
@@ -11,9 +12,6 @@
 
 // TODO Make sightreading based on time not beat time
 #define SIGHTREAD_DISTANCE (3.0f / 170.0f)
-
-// HACK
-struct GameData* d;
 
 struct Song level;
 
@@ -55,9 +53,9 @@ static void particles_update() {
 static void particles_draw(struct GameData* data) {
 	for (int i = particle_start; i != particle_end; i = (i + 1) % 10) {
 		// struct Particle* p = &particles[i];
-		// data->playdate->graphics->drawRect(p->x - p->life / 2, p->y - p->life / 2, p->life, p->life, kColorBlack);
-		// data->playdate->graphics->drawRect(p->x - p->life / 2 - 1, p->y - p->life / 2 - 1, p->life + 2, p->life + 2, kColorWhite);
-		data->playdate->graphics->drawEllipse(200 - 32 - pulses[i] / 2, 120 - 32 - pulses[i] / 2, 64 + pulses[i], 64 + pulses[i], 1, 0.0f, 0.0f, kColorBlack);
+		// playdate->graphics->drawRect(p->x - p->life / 2, p->y - p->life / 2, p->life, p->life, kColorBlack);
+		// playdate->graphics->drawRect(p->x - p->life / 2 - 1, p->y - p->life / 2 - 1, p->life + 2, p->life + 2, kColorWhite);
+		playdate->graphics->drawEllipse(200 - 32 - pulses[i] / 2, 120 - 32 - pulses[i] / 2, 64 + pulses[i], 64 + pulses[i], 1, 0.0f, 0.0f, kColorBlack);
 	}
 }
 
@@ -195,8 +193,6 @@ static int parse_line(const char* line, int* type, int* color, int* position, fl
 }
 
 static int load_song(GameData* data, struct SongPlayer* song_player, const char* path) {
-	PlaydateAPI* playdate = data->playdate;
-
   char dir_path[100] = "songs/";
   strcat(dir_path, path);
   
@@ -373,8 +369,7 @@ static void song_finish_callback(SoundSource* source) {
 }
 
 void song_set_data_ptr(struct GameData* data) {
-	d = data;
-	level.notes = (struct Note*)data->playdate->system->realloc(NULL, sizeof(struct Note) * 1000);
+	level.notes = (struct Note*)playdate->system->realloc(NULL, sizeof(struct Note) * 1000);
 }
 
 void song_open(GameData* data, struct SongPlayer* song_player, const char* path) {
@@ -386,7 +381,7 @@ void song_open(GameData* data, struct SongPlayer* song_player, const char* path)
 		return;
 	}
 	sp_play(data, song_player);
-	data->playdate->sound->fileplayer->setFinishCallback(song_player->current_song, song_finish_callback);
+	playdate->sound->fileplayer->setFinishCallback(song_player->current_song, song_finish_callback);
 }
 
 void song_close(struct GameData* data) {
@@ -395,14 +390,13 @@ void song_close(struct GameData* data) {
 
 void song_update(struct GameData* data) {	
   PDButtons pressed;
-  data->playdate->system->getButtonState(NULL, &pressed, NULL);
+  playdate->system->getButtonState(NULL, &pressed, NULL);
 			
 	if (level.health < 1) {
-		if (pressed > 0) {
-			data->state = GAME_STATE_SONG_LIST;
-			data->first_update = 1;
-		}
 		sp_stop(data, &data->song_player);
+		if (pressed > 0) {
+			scene_transition(data->scene_manager, data->song_list_scene);
+		}
 		return;
 	}
 	
@@ -439,7 +433,7 @@ void song_update(struct GameData* data) {
 				float diff_2 = diff * diff;
 				
 				// inside clickable range
-				if (diff_2 < 0.11f * 0.11f && note->color == angle_to_color(data->playdate->system->getCrankAngle(), note_position_to_angle(note->position))) {
+				if (diff_2 < 0.11f * 0.11f && note->color == angle_to_color(playdate->system->getCrankAngle(), note_position_to_angle(note->position))) {
 					level.index += 1;
 					level.health += 5;
 					prompt_show = 1;
@@ -468,7 +462,7 @@ void song_update(struct GameData* data) {
 			if (note->time < data->song_player.time) {
 				level.index += 1;
         float note_angle = note_position_to_angle(note->position);				
-        if (note->color == angle_to_color(data->playdate->system->getCrankAngle(), note_angle)) {
+        if (note->color == angle_to_color(playdate->system->getCrankAngle(), note_angle)) {
 					float progress = 1.0f - (note->beat_time - data->song_player.beat_time) / (data->song_player.bpm * SIGHTREAD_DISTANCE);
 					int x, y;
 					get_note_position(note->position, progress, &x, &y);
@@ -488,7 +482,7 @@ void song_update(struct GameData* data) {
 			if (note->time < data->song_player.time) {
 				level.index += 1;
 				float note_angle = note_position_to_angle(note->position);
-				if (note->color == angle_to_color(data->playdate->system->getCrankAngle(), note_angle)) {
+				if (note->color == angle_to_color(playdate->system->getCrankAngle(), note_angle)) {
 					level.health -= 20;
 					missed = 1;
 					level.combo = 0;
@@ -516,14 +510,14 @@ void song_update(struct GameData* data) {
 }
 
 void song_draw(struct GameData* data) {
-	data->playdate->graphics->clear(kColorWhite);
+	playdate->graphics->clear(kColorWhite);
 	if (level.health < 1) {
-		data->playdate->graphics->drawText("Game Over", 9, kASCIIEncoding, 200, 120);
+		playdate->graphics->drawText("Game Over", 9, kASCIIEncoding, 200, 120);
 		char buffer[100];
 		sprintf(buffer, "Score: %d", level.score);
-		data->playdate->graphics->drawText(buffer, 99, kASCIIEncoding, 200, 150);
+		playdate->graphics->drawText(buffer, 99, kASCIIEncoding, 200, 150);
 		if (failed_to_load_song) {
-			data->playdate->graphics->drawText("Failed to open song", 99, kASCIIEncoding, 0, 10);
+			playdate->graphics->drawText("Failed to open song", 99, kASCIIEncoding, 0, 10);
 		}
 		
 		return;
@@ -547,8 +541,8 @@ void song_draw(struct GameData* data) {
 	}
 
 	PDButtons pressed;
-	data->playdate->system->getButtonState(&pressed, NULL, NULL);	
-	draw_disk(data, 200, 120, data->playdate->system->getCrankAngle(), pressed > 0);
+	playdate->system->getButtonState(&pressed, NULL, NULL);	
+	draw_disk(data, 200, 120, playdate->system->getCrankAngle(), pressed > 0);
 	
 	particles_draw(data);
 	
@@ -561,10 +555,10 @@ void song_draw(struct GameData* data) {
 		display_score += (diff + 1) >> 1;
 	}
 	sprintf(display_buffer, "%d", display_score);
-	data->playdate->graphics->drawText(display_buffer, 50, kASCIIEncoding, 200 - data->playdate->graphics->getTextWidth(data->font, display_buffer, 26, kASCIIEncoding, 0) / 2.0f, 200);
+	playdate->graphics->drawText(display_buffer, 50, kASCIIEncoding, 200 - playdate->graphics->getTextWidth(data->font, display_buffer, 26, kASCIIEncoding, 0) / 2.0f, 200);
 	
 	// name
-	data->playdate->graphics->drawText(level.name, 26, kASCIIEncoding, 200 - data->playdate->graphics->getTextWidth(data->font, level.name, 26, kASCIIEncoding, 0) / 2.0f, 5);
+	playdate->graphics->drawText(level.name, 26, kASCIIEncoding, 200 - playdate->graphics->getTextWidth(data->font, level.name, 26, kASCIIEncoding, 0) / 2.0f, 5);
 	
 	// health
 	if (missed) {
@@ -577,19 +571,19 @@ void song_draw(struct GameData* data) {
 	int offset = health_shake[health_shake_index];
 	health_shake_index += 2;
 	
-	data->playdate->graphics->drawRect(200 - 50 + offset, 240 - 18 - 3, 100, 18, kColorBlack);
-	data->playdate->graphics->fillRect(200 - 50 + 2 + offset, 240 - 18 - 3 + 2, 96 * level.health / 100, 14, kColorBlack);
+	playdate->graphics->drawRect(200 - 50 + offset, 240 - 18 - 3, 100, 18, kColorBlack);
+	playdate->graphics->fillRect(200 - 50 + 2 + offset, 240 - 18 - 3 + 2, 96 * level.health / 100, 14, kColorBlack);
 	
 	// timer
-	data->playdate->graphics->drawEllipse(200 - 50 - 8 - 18 + offset, 240 - 3 - 18, 18, 18, 1, 0.0f, 0.0f, kColorBlack);
-	data->playdate->graphics->fillEllipse(200 - 50 - 8 - 18 + offset, 240 - 3 - 18, 18, 18, 0.0f, 360.0f * data->song_player.percentage, kColorBlack);
+	playdate->graphics->drawEllipse(200 - 50 - 8 - 18 + offset, 240 - 3 - 18, 18, 18, 1, 0.0f, 0.0f, kColorBlack);
+	playdate->graphics->fillEllipse(200 - 50 - 8 - 18 + offset, 240 - 3 - 18, 18, 18, 0.0f, 360.0f * data->song_player.percentage, kColorBlack);
 	
 	// accuracy
 	float accuracy = level.accuracy * 100.0f;
 	sprintf(display_buffer, "%d.%d%%", (int)accuracy, (int)((accuracy - (int)(accuracy)) * 100.0f + 0.5f));
-	// data->playdate->graphics->setFont(data->accuracy_font);
-	data->playdate->graphics->drawText(display_buffer, 50, kASCIIEncoding, 200 + 50 + 5 + offset, 240 - data->playdate->graphics->getFontHeight(data->font));
-	// data->playdate->graphics->setFont(data->font);
+	// playdate->graphics->setFont(data->accuracy_font);
+	playdate->graphics->drawText(display_buffer, 50, kASCIIEncoding, 200 + 50 + 5 + offset, 240 - playdate->graphics->getFontHeight(data->font));
+	// playdate->graphics->setFont(data->font);
 		
 	// prompt
 	int prompt_y = (int)(prompt_ease * 10.0f);
@@ -600,16 +594,16 @@ void song_draw(struct GameData* data) {
 	} else {
 		switch (prompt) {
 			case 0:
-				data->playdate->graphics->drawText("Miss", 4, kASCIIEncoding, 200 - data->playdate->graphics->getTextWidth(data->font, "Miss", 4, kASCIIEncoding, 0) / 2, height - prompt_y);
+				playdate->graphics->drawText("Miss", 4, kASCIIEncoding, 200 - playdate->graphics->getTextWidth(data->font, "Miss", 4, kASCIIEncoding, 0) / 2, height - prompt_y);
 				break;
 			case 1:
-				data->playdate->graphics->drawText("OK", 2, kASCIIEncoding, 200 - data->playdate->graphics->getTextWidth(data->font, "OK", 2, kASCIIEncoding, 0) / 2, height - prompt_y);
+				playdate->graphics->drawText("OK", 2, kASCIIEncoding, 200 - playdate->graphics->getTextWidth(data->font, "OK", 2, kASCIIEncoding, 0) / 2, height - prompt_y);
 				break;
 			case 2:
-				data->playdate->graphics->drawText("Good", 4, kASCIIEncoding, 200 - data->playdate->graphics->getTextWidth(data->font, "Good", 4, kASCIIEncoding, 0) / 2, height - prompt_y);
+				playdate->graphics->drawText("Good", 4, kASCIIEncoding, 200 - playdate->graphics->getTextWidth(data->font, "Good", 4, kASCIIEncoding, 0) / 2, height - prompt_y);
 				break;
 			case 3:
-				data->playdate->graphics->drawText("Perfect", 7, kASCIIEncoding, 200 - data->playdate->graphics->getTextWidth(data->font, "Perfect", 7, kASCIIEncoding, 0) / 2, height - prompt_y);
+				playdate->graphics->drawText("Perfect", 7, kASCIIEncoding, 200 - playdate->graphics->getTextWidth(data->font, "Perfect", 7, kASCIIEncoding, 0) / 2, height - prompt_y);
 				break;
 			default:
 				break;
@@ -619,6 +613,6 @@ void song_draw(struct GameData* data) {
 	// combo
 	if (level.combo > 0) {
 		sprintf(display_buffer, "Combo %d", level.combo);
-		data->playdate->graphics->drawText(display_buffer, 50, kASCIIEncoding, 200 - data->playdate->graphics->getTextWidth(data->font, display_buffer, 50, kASCIIEncoding, 0) / 2, height - 20 - (prompt_y >> 1));
+		playdate->graphics->drawText(display_buffer, 50, kASCIIEncoding, 200 - playdate->graphics->getTextWidth(data->font, display_buffer, 50, kASCIIEncoding, 0) / 2, height - 20 - (prompt_y >> 1));
 	}
 }

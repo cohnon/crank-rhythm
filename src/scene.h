@@ -1,23 +1,36 @@
 #ifndef SCENE_H
 #define SCENE_H
 
+#include "pd_api.h"
 #include <stdint.h>
+
+#define MAX_SCENES 10
 
 typedef uint8_t scene_id;
 
+typedef void (*SceneOnStart)(void* game_data, void* scene_data);
+typedef void (*SceneOnUpdate)(void* game_data, void* scene_data);
+typedef void (*SceneOnEnd)(void* game_data, void* scene_data);
+
 typedef struct Scene {
-	void (*on_start)(void* data);
-  void (*on_update)(void* data);
-  void (*on_end)(void* data);
+	void* data;
+	uint32_t data_size;
+	SceneOnStart on_start;
+	SceneOnUpdate on_update;
+	SceneOnEnd on_end;
 } Scene;
 
 typedef struct SceneManager {
-  scene_id current_scene;
-  scene_id prev_scene;
-  float transition_timer;
+	void* game_data;
+  scene_id current_scene_id;
+  Scene scenes[MAX_SCENES];
+  uint8_t scenes_length;
 } SceneManager;
 
-scene_id scene_add(Scene* scene);
-void scene_transition(Scene* scene);
+SceneManager* scene_new(void* game_data);
+void scene_delete(SceneManager* manager);
+scene_id scene_add(SceneManager* manager, const int scene_data_size, SceneOnStart on_start, SceneOnUpdate on_update, SceneOnEnd on_end);
+void scene_transition(SceneManager* manager, const scene_id scene);
+void scene_update(SceneManager* manager);
 
 #endif

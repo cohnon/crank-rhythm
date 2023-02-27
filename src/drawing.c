@@ -1,4 +1,5 @@
 #include "drawing.h"
+#include "game.h"
 #include "song.h"
 
 #include "pd_api/pd_api_gfx.h"
@@ -16,18 +17,18 @@ void draw_disk(struct GameData* data, float pos_x, float pos_y, float angle, int
 	int bounds_x = pos_x - (DISK_SIZE_MAX >> 1);
 	int bounds_y = pos_y - (DISK_SIZE_MAX >> 1);
 
-	data->playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, 0.0f, 0.0f, kColorWhite);
+	playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, 0.0f, 0.0f, kColorWhite);
 
 	// white
-	data->playdate->graphics->drawEllipse(bounds_x + offset, bounds_y + offset, size, size, 2, angle + 0.0f, angle + 90.0f, kColorBlack);
-	data->playdate->graphics->drawEllipse(bounds_x + offset, bounds_y + offset, size, size, 2, angle + 180.0f, angle + 270.0f, kColorBlack);
+	playdate->graphics->drawEllipse(bounds_x + offset, bounds_y + offset, size, size, 2, angle + 0.0f, angle + 90.0f, kColorBlack);
+	playdate->graphics->drawEllipse(bounds_x + offset, bounds_y + offset, size, size, 2, angle + 180.0f, angle + 270.0f, kColorBlack);
 	// black
-	data->playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, angle + 270.0f, angle + 360.0f, kColorBlack);
-	data->playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, angle + 90.0f, angle + 180.0f, kColorBlack);
+	playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, angle + 270.0f, angle + 360.0f, kColorBlack);
+	playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, angle + 90.0f, angle + 180.0f, kColorBlack);
 }
 
 void draw_note(const struct GameData* data, const float pos_x, const float pos_y, const uint8_t type, const uint8_t color) {
-  const struct playdate_graphics* graphics = data->playdate->graphics;
+  const struct playdate_graphics* graphics = playdate->graphics;
   
 	switch (type) {
 		case NOTE_NORMAL: {

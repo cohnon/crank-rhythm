@@ -1,31 +1,24 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include "pd_api.h"
+#include "scene.h"
 #include "song_player.h"
+#include <pd_api.h>
 #include <stdint.h>
 
-typedef uint8_t game_state;
-
-#define GAME_STATE_MAIN_MENU 0
-#define GAME_STATE_SONG_LIST 1
-#define GAME_STATE_SETTINGS 2
-#define GAME_STATE_SONG 3
-#define GAME_STATE_TUTORIAL 4
-
-typedef struct SongData {
-  char name[32];
-  char artist[32];
-  char creator[32];
-  char path[50];
-  uint16_t bpm;
-} SongData;
 
 typedef struct GameData {
-  game_state state;
-  uint8_t first_update;
+  // Data
   uint32_t frame;
-  PlaydateAPI* playdate;
+
+  // Scenes
+  SceneManager* scene_manager;
+  scene_id menu_scene;
+  scene_id song_list_scene;
+  scene_id tutorial_scene;
+  scene_id song_scene;
+
+  // Assets  
   LCDBitmap* title_bitmaps[2];
   LCDBitmap* black_x_bitmap;
   LCDBitmap* white_x_bitmap;
@@ -33,7 +26,13 @@ typedef struct GameData {
   LCDBitmap* light_grey_bitmap;
   LCDBitmap* clear_bitmap;
   LCDFont* font;
+  LCDFont* basic_font;
   SamplePlayer* sound_effect;
+  FilePlayer* fileplayer;
+  struct SongPlayer song_player;
+  int song_count;
+  
+  // Debug
   PDMenuItem* debug_menu;
   int debug;
   float debug_next_note;
@@ -42,18 +41,13 @@ typedef struct GameData {
   char debug_log[10][15];
   int debug_log_start;
   int debug_log_end;
-  FilePlayer* fileplayer;
-  LCDFont* basic_font;
-  struct SongPlayer song_player;
-  SongData songs[10];
-  int song_count;
 } GameData;
 
-void game_setup_pd(PlaydateAPI* playdate);
+extern PlaydateAPI* playdate;
+
+void game_setup_pd(PlaydateAPI* pd);
 void game_init();
 void game_update();
-
-void game_change_state(game_state state);
 
 void debug_log(const char* msg);
 
