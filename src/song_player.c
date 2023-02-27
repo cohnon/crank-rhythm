@@ -5,8 +5,8 @@
 int sp_load(GameData* data, struct SongPlayer* player, const char* path, const float bpm, const float offset) {
   const struct playdate_sound* sound = playdate->sound;
   player->current_song = sound->fileplayer->newPlayer();
-	sound->fileplayer->setBufferLength(player->current_song, 5.0f);
-	int fileplayer_result = sound->fileplayer->loadIntoPlayer(player->current_song, path);
+  sound->fileplayer->setBufferLength(player->current_song, 5.0f);
+  int fileplayer_result = sound->fileplayer->loadIntoPlayer(player->current_song, path);
 
   if (fileplayer_result == 0) {
     playdate->system->logToConsole("Failed to load audio:  %s", path);

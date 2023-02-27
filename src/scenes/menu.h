@@ -6,11 +6,11 @@
 #define MENU_NOTES_LENGTH 15
 
 typedef struct MenuNote {
-	float x;
-	uint8_t y;
-	uint8_t type;
-	uint8_t color;
-	uint8_t sin_offset;
+  float x;
+  uint8_t y;
+  uint8_t type;
+  uint8_t color;
+  uint8_t sin_offset;
 } MenuNote;
 
 typedef struct MenuData {

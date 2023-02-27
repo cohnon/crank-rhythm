@@ -33,31 +33,31 @@
 
 struct Note {
   uint8_t type;
-	uint8_t color;
+  uint8_t color;
   uint8_t position;
-	uint8_t extra_data; // just to fill out the padding why not
+  uint8_t extra_data; // just to fill out the padding why not
   float beat_time;
-	float time;
+  float time;
 };
 
 struct Song {
-	int state;
-	char name[26];
-	int index;
-	int score;
-	int health;
-	int miss_count;
-	int ok_count;
-	int good_count;
-	int perfect_count;
-	int danger_hit;
-	int danger_miss;
-	int normal_hit;
-	int normal_miss;
-	int note_count;
-	int combo;
-	float accuracy;
-	struct Note* notes;
+  int state;
+  char name[26];
+  int index;
+  int score;
+  int health;
+  int miss_count;
+  int ok_count;
+  int good_count;
+  int perfect_count;
+  int danger_hit;
+  int danger_miss;
+  int normal_hit;
+  int normal_miss;
+  int note_count;
+  int combo;
+  float accuracy;
+  struct Note* notes;
 };
 
 void song_set_data_ptr(GameData* data);

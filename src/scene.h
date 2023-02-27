@@ -13,15 +13,15 @@ typedef void (*SceneOnUpdate)(void* game_data, void* scene_data);
 typedef void (*SceneOnEnd)(void* game_data, void* scene_data);
 
 typedef struct Scene {
-	void* data;
-	uint32_t data_size;
-	SceneOnStart on_start;
-	SceneOnUpdate on_update;
-	SceneOnEnd on_end;
+  void* data;
+  uint32_t data_size;
+  SceneOnStart on_start;
+  SceneOnUpdate on_update;
+  SceneOnEnd on_end;
 } Scene;
 
 typedef struct SceneManager {
-	void* game_data;
+  void* game_data;
   scene_id current_scene_id;
   Scene scenes[MAX_SCENES];
   uint8_t scenes_length;
