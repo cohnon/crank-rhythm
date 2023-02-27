@@ -6,19 +6,19 @@
 
 #define MAX_SONGS 10
 
-typedef struct SongData {
+typedef struct SongMetaData {
   char name[32];
   char artist[32];
   char creator[32];
   char path[50];
   uint16_t bpm;
-} SongData;
+} SongMetaData;
 
 typedef struct SongListData {
   int16_t map_select;
   int16_t map_index;
   float map_select_range;
-  SongData song[MAX_SONGS];
+  SongMetaData song[MAX_SONGS];
   
   // HACK
   char map_ids[MAX_SONGS][32];

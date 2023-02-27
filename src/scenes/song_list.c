@@ -1,7 +1,6 @@
 #include "song_list.h"
 
 #include "../game.h"
-#include "../song.h"
 
 
 // Callback for reading directory contents
@@ -85,7 +84,9 @@ void song_list_on_update(void* game_data, void* song_list_data) {
       scene_transition(game->scene_manager, game->tutorial_scene);
       return;
     }
-    song_open(game, &game->song_player, song_list->map_ids[song_list->map_select]);
+    
+    // TODO: is there a way to pass the song name to another scene without polluting GameData?
+    strcpy(game->song_path, song_list->map_ids[song_list->map_select]);
     playdate->sound->fileplayer->stop(game->fileplayer);
     scene_transition(game->scene_manager, game->song_scene);
   }

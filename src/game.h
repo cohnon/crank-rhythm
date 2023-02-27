@@ -33,6 +33,7 @@ typedef struct GameData {
   int song_count;
   
   // Debug
+  char song_path[32];
   PDMenuItem* debug_menu;
   int debug;
   float debug_next_note;

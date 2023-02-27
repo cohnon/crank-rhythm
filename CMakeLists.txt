@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 set(CMAKE_C_STANDARD 11)
 
 set(ENVSDK $ENV{PLAYDATE_SDK_PATH})
-set(CSOURCE src/main.c src/song_player.c src/game.c src/song.c src/scene.c src/drawing.c src/utils.c src/scenes/menu.c src/scenes/song_list.c src/scenes/tutorial.c src/scenes/song.c)
+set(CSOURCE src/main.c src/song_player.c src/game.c src/scene.c src/drawing.c src/utils.c src/scenes/menu.c src/scenes/song_list.c src/scenes/tutorial.c src/scenes/song.c)
 
 if (NOT ${ENVSDK} STREQUAL "")
 	# Convert path from Windows

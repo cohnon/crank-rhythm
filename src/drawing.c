@@ -1,6 +1,6 @@
 #include "drawing.h"
 #include "game.h"
-#include "song.h"
+#include "scenes/song.h"
 
 #include "pd_api/pd_api_gfx.h"
 #include <assert.h>
