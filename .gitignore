@@ -3,3 +3,4 @@ build/
 sim/
 compile_commands.json
 .cache/
+.DS_Store

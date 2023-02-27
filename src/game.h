@@ -47,8 +47,8 @@ typedef struct GameData {
 extern PlaydateAPI* playdate;
 
 void game_setup_pd(PlaydateAPI* pd);
-void game_init();
-void game_update();
+void game_init(void);
+void game_update(void);
 
 void debug_log(const char* msg);
 

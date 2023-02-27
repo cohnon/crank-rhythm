@@ -31,7 +31,7 @@ static void menu_debug_callback(void* userdata) {
   // ********************* //
  //  Game Initialisation  //
 // ********************* //
-void game_init() {
+void game_init(void) {
   
   // Playdate setup        
   playdate->display->setRefreshRate(50);
@@ -73,7 +73,7 @@ void game_init() {
   // ************* //
  //  Game Update  //
 // ************* //
-void game_update() {
+void game_update(void) {
   scene_update(data.scene_manager);
 
   data.frame += 1;
