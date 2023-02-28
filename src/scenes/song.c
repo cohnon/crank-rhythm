@@ -3,6 +3,8 @@
 #include "../game.h"
 #include "../song_player.h"
 #include "../drawing.h"
+#include "../beatmap.h"
+
 #include <stdio.h>
 #include <assert.h>
 
@@ -33,6 +35,11 @@ int particle_start;
 int particle_end;
 struct Particle particles[10];
 int pulses[10];
+
+static void menu_home_callback(void* userdata) {
+  GameData* game = (GameData*)userdata;
+  scene_transition(game->scene_manager, game->song_list_scene);
+}
 
 static void particles_update() {
   for (int i = particle_start; i != particle_end; i = (i + 1) % 10) {
@@ -187,105 +194,83 @@ static int parse_line(const char* line, int* type, int* color, int* position, fl
   return length;
 }
 
-static int load_song(GameData* game, SongData* song, struct SongPlayer* song_player, const char* path) {
-  char dir_path[100] = "songs/";
-  strcat(dir_path, path);
+// static int load_song_old(GameData* game, SongData* song, struct SongPlayer* song_player, const char* path) {
+//   char dir_path[100] = "songs/";
+//   strcat(dir_path, path);
   
-  char beatmap_path[100];
-  strcpy(beatmap_path, dir_path);
-  strcat(beatmap_path, "/beatmap.txt");
+//   char beatmap_path[100];
+//   strcpy(beatmap_path, dir_path);
+//   strcat(beatmap_path, "/beatmap.txt");
 
-  char beatmap_text[50];
-  int file_text_offset;
-  SDFile* file = playdate->file->open(beatmap_path, kFileRead);
-  int file_read_result = playdate->file->read(file, beatmap_text, 50);
+//   char beatmap_text[50];
+//   int file_text_offset;
+//   SDFile* file = playdate->file->open(beatmap_path, kFileRead);
+//   int file_read_result = playdate->file->read(file, beatmap_text, 50);
   
-  if (file_read_result == -1) {
-    playdate->system->logToConsole("Failed to read %s", beatmap_path);
-    debug_log("Fail1");
-    return 0;
-  }
+//   if (file_read_result == -1) {
+//     playdate->system->logToConsole("Failed to read %s", beatmap_path);
+//     return 0;
+//   }
 
-  int version = 0;
-  char song_name[26];
-  float bpm = 0;
-  float offset = 0;
-  file_text_offset = parse_header(beatmap_text, &version, song_name, &bpm, &offset);  
+//   int version = 0;
+//   char song_name[26];
+//   float bpm = 0;
+//   float offset = 0;
+//   file_text_offset = parse_header(beatmap_text, &version, song_name, &bpm, &offset);  
 
-  debug_log(song_name);
-  char header_display_buffer[20];
-  sprintf(header_display_buffer, "%d %d.%d %d.%d", version, (int)bpm, (int)((bpm - (int)bpm)*10.0f + 0.5f), (int)offset, (int)((offset - (int)offset)*10.0f + 0.5f));
-  debug_log(header_display_buffer);
+//   char header_display_buffer[20];
+//   sprintf(header_display_buffer, "%d %d.%d %d.%d", version, (int)bpm, (int)((bpm - (int)bpm)*10.0f + 0.5f), (int)offset, (int)((offset - (int)offset)*10.0f + 0.5f));
     
-  char song_full_path[100];
-  strcpy(song_full_path, dir_path);
-  strcat(song_full_path, "/audio");
+//   char song_full_path[100];
+//   strcpy(song_full_path, dir_path);
+//   strcat(song_full_path, "/audio");
   
-  int sp_load_result = sp_load(game, song_player, song_full_path, bpm, offset);
+//   int sp_load_result = sp_load(game, song_player, song_full_path, bpm, offset);
   
-  if (!sp_load_result) {
-    playdate->system->logToConsole("Failed to load audio file");
-    debug_log("Fail2");
-    return 0;
-  }
+//   if (!sp_load_result) {
+//     playdate->system->logToConsole("Failed to load audio file");
+//     return 0;
+//   }
   
-  strcpy(song->name, song_name);
-  song->note_count = 0;
+//   strcpy(song->name, song_name);
+//   song->note_count = 0;
   
-  // bpm of brain power is 170 (2.371 offset)
-  float last_beat_time = -999.0f; // make sure each note is larger than the last
+//   // bpm of brain power is 170 (2.371 offset)
+//   float last_beat_time = -999.0f; // make sure each note is larger than the last
   
-  int type;
-  int color;
-  int position;
-  float beat_time;
-  int read;
-  int file_read;
-  while (song->note_count < 1000) {
-    playdate->file->seek(file, file_text_offset, SEEK_SET);
-    file_read = playdate->file->read(file, beatmap_text, 50);
-    read = parse_line(beatmap_text, &type, &color, &position, &beat_time);
+//   int type;
+//   int color;
+//   int position;
+//   float beat_time;
+//   int read;
+//   int file_read;
+//   while (song->note_count < 1000) {
+//     playdate->file->seek(file, file_text_offset, SEEK_SET);
+//     file_read = playdate->file->read(file, beatmap_text, 50);
+//     read = parse_line(beatmap_text, &type, &color, &position, &beat_time);
 
-    if (song->note_count == 0) {
-      debug_log(beatmap_text);
-    }
+//     if (file_read == 0) {
+//       break;
+//     }
 
-    beatmap_text[20] = 0;
-    if (file_read == 0) {
-      break;
-    }
+//     song->notes[song->note_count].type = type;
+//     song->notes[song->note_count].color = color;
+//     song->notes[song->note_count].position = position;
+//     song->notes[song->note_count].beat_time = beat_time;
+//     song->notes[song->note_count].time = beat_time * 60 / bpm;
 
-    if (song->note_count == 0) {
-      char buffer[15];
-      sprintf(buffer, "type: %d", type);
-      debug_log(buffer);
-      sprintf(buffer, "col: %d", color);
-      debug_log(buffer);
-      sprintf(buffer, "pos: %d", position);
-      debug_log(buffer);
-      sprintf(buffer, "time: %d.%d", (int)beat_time, (int)((beat_time - (int)beat_time) * 10.0f + 0.5f));
-      debug_log(buffer);
-    }
+//     assert(beat_time > last_beat_time);
 
-    song->notes[song->note_count].type = type;
-    song->notes[song->note_count].color = color;
-    song->notes[song->note_count].position = position;
-    song->notes[song->note_count].beat_time = beat_time;
-    song->notes[song->note_count].time = beat_time * 60 / bpm;
-
-    assert(beat_time > last_beat_time);
-
-    file_text_offset += read;
-    song->note_count += 1;
-  }
+//     file_text_offset += read;
+//     song->note_count += 1;
+//   }
 
     
-  char buffer[15];
-  sprintf(buffer, "#notes: %d", song->note_count);
-  debug_log(buffer);
+//   char buffer[15];
+//   sprintf(buffer, "#notes: %d", song->note_count);
     
-  return 1;
-}
+//   return 1;
+// }
 
 static float note_position_to_angle(int position) {  
   float note_angle;
@@ -366,15 +351,19 @@ static void song_finish_callback(SoundSource* source) {
   finished = 1;
 }
 
-
+// HACK too lazy to put this in game.h
+PDMenuItem* quit_menu_item;
 void song_on_start(void* game_data, void* song_data) {
   GameData* game = (GameData*)game_data;
   SongData* song = (SongData*)song_data;
   
-  song->notes = (struct Note*)playdate->system->realloc(NULL, sizeof(struct Note) * 1000);
+  quit_menu_item = playdate->system->addMenuItem("Quit Song", menu_home_callback, game_data);
 
   reset(song);
-  int load_song_result = load_song(game, song, &game->song_player, game->song_path);
+
+  // int load_song_result = load_song(game, song, &game->song_player, game->song_path);
+  int load_header_result = beatmap_load_header(&song->header, game->song_path);
+  int load_song_result = beatmap_load(&song->beatmap, &song->header);
   if (!load_song_result) {
     song->health = 0;
     failed_to_load_song = 1;
@@ -402,14 +391,9 @@ void song_on_update(void* game_data, void* song_data) {
   
   particles_update();
   
-  // debug
-  game->debug_next_note = song->notes[song->index].beat_time;
-  game->debug_next_note_position = song->notes[song->index].position;
-  game->debug_total_notes = song->note_count;
-
   struct Note* note;
   for (int i = song->index; i < song->note_count; ++i) {
-    note = &song->notes[i];
+    note = &song->beatmap.notes[i];
     if (note->beat_time - game->song_player.bpm * SIGHTREAD_DISTANCE > game->song_player.beat_time) {
       break;
     }
@@ -525,7 +509,7 @@ void song_on_update(void* game_data, void* song_data) {
   int x, y;
   float progress;
   for (int i = song->index; i < song->note_count; ++i) {
-    note = &song->notes[i];
+    note = &song->beatmap.notes[i];
     // not yet
     if (note->beat_time - game->song_player.bpm * SIGHTREAD_DISTANCE > game->song_player.beat_time) {
       break;
@@ -555,7 +539,7 @@ void song_on_update(void* game_data, void* song_data) {
   playdate->graphics->drawText(display_buffer, 50, kASCIIEncoding, 200 - playdate->graphics->getTextWidth(game->font, display_buffer, 26, kASCIIEncoding, 0) / 2.0f, 200);
   
   // name
-  playdate->graphics->drawText(song->name, 26, kASCIIEncoding, 200 - playdate->graphics->getTextWidth(game->font, song->name, 26, kASCIIEncoding, 0) / 2.0f, 5);
+  playdate->graphics->drawText(song->beatmap.name, 26, kASCIIEncoding, 200 - playdate->graphics->getTextWidth(game->font, song->beatmap.name, 26, kASCIIEncoding, 0) / 2.0f, 5);
   
   // health
   if (missed) {
@@ -616,6 +600,9 @@ void song_on_update(void* game_data, void* song_data) {
 
 void song_on_end(void* game_data, void* song_data) {
   GameData* game = (GameData*)game_data;
-  sp_stop(game, &game->song_player);  
+
+  playdate->system->removeMenuItem(quit_menu_item);
+
+  sp_stop(game, &game->song_player);
 }
 

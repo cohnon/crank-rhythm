@@ -1,6 +1,7 @@
 #ifndef MENU_H
 #define MENU_H
 
+#include <pd_api.h>
 #include <stdint.h>
 
 #define MENU_NOTES_LENGTH 15
@@ -14,6 +15,8 @@ typedef struct MenuNote {
 } MenuNote;
 
 typedef struct MenuData {
+  float progress;
+  PDSynth* progress_synth;
   MenuNote bg_notes[MENU_NOTES_LENGTH];
 } MenuData;
 

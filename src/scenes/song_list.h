@@ -18,6 +18,7 @@ typedef struct SongListData {
   int16_t map_select;
   int16_t map_index;
   float map_select_range;
+  float input_delay;
   SongMetaData song[MAX_SONGS];
   
   // HACK

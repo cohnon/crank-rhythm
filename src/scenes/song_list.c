@@ -28,6 +28,7 @@ static void get_song(const char* filename, void* userdata) {
 }
 
 void song_list_on_start(void* game_data, void* song_list_data) {
+  GameData* game = (GameData*)game_data;
   SongListData* song_list = (SongListData*)song_list_data;
   
   song_list->map_index = 1;
@@ -36,6 +37,7 @@ void song_list_on_start(void* game_data, void* song_list_data) {
   playdate->file->listfiles("songs", get_song, song_list_data, 0);
   
   song_list->map_select_range = playdate->system->getCrankAngle();
+  song_list->input_delay = game->time + 0.5f;
 }
 
 void song_list_on_update(void* game_data, void* song_list_data) {
@@ -52,7 +54,7 @@ void song_list_on_update(void* game_data, void* song_list_data) {
     crank_dist += 360.0f;
   }
 
-  if (crank_dist > 37.0f * 2.0f) {
+  if (game->time > song_list->input_delay && crank_dist > 37.0f * 2.0f) {
     if (playdate->system->getCrankChange() > 0) {
       song_list->map_select += 1;
       if (song_list->map_select == song_list->map_index) {
@@ -82,7 +84,6 @@ void song_list_on_update(void* game_data, void* song_list_data) {
   if (pressed & kButtonA) {
     if (song_list->map_select == 0) {
       scene_transition(game->scene_manager, game->tutorial_scene);
-      return;
     }
     
     // TODO: is there a way to pass the song name to another scene without polluting GameData?
@@ -105,14 +106,10 @@ void song_list_on_update(void* game_data, void* song_list_data) {
   }
   playdate->graphics->setDrawMode(kDrawModeCopy);
 
-  int length = 150;
-  playdate->graphics->fillRect(
-    0, 19 + 30 * song_list->map_select,
-    length + 15, 30,
-    kColorXOR
-  );
-  
-  playdate->graphics->fillEllipse(length, 19 + 30 * song_list->map_select, 30, 30, 0.0f, 360.0f, kColorBlack);
+  int length = 170;
+  int y_pos = 19 + 30 * song_list->map_select;
+  int selector_points[8] = {0, y_pos, length + 3, y_pos, length, y_pos + 30, 0, y_pos + 30};
+  playdate->graphics->fillPolygon(4, selector_points, kColorXOR, kPolygonFillNonZero);
 }
 
 void song_list_on_end(void* game_data, void* song_list_data) {

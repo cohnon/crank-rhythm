@@ -1,6 +1,7 @@
 #ifndef SONGSCENE_H
 #define SONGSCENE_H
 
+#include "../beatmap.h"
 #include <stdint.h>
 
 
@@ -28,17 +29,16 @@
 
 #define MAX_HEALTH 100
 
-struct Note {
-  uint8_t type;
-  uint8_t color;
-  uint8_t position;
-  uint8_t extra_data; // just to fill out the padding why not
-  float beat_time;
-  float time;
-};
+// struct Note {
+//   uint8_t type;
+//   uint8_t color;
+//   uint8_t position;
+//   uint8_t extra_data; // just to fill out the padding why not
+//   float beat_time;
+//   float time;
+// };
 
 typedef struct SongData {
-  char name[32];
   int index;
   int score;
   int health;
@@ -53,7 +53,10 @@ typedef struct SongData {
   int note_count;
   int combo;
   float accuracy;
-  struct Note* notes;  
+  // char name[50];
+  // struct Note* notes;
+  BeatmapHeader header;
+  Beatmap beatmap;
 } SongData;
 
 void song_on_start(void* game_data, void* song_data);

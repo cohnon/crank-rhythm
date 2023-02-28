@@ -3,14 +3,16 @@
 
 #include <assert.h>
 
-static const uint8_t SCENE_ID_NONE = 0x1 << 7;
+static const uint8_t SCENE_ID_NONE = 0xff;
 
 SceneManager* scene_new(void* game_data) {
   SceneManager* manager = (SceneManager*)playdate->system->realloc(NULL, sizeof(SceneManager));
   
   manager->game_data = game_data;
   manager->scenes_length = 0;
+  
   manager->current_scene_id = SCENE_ID_NONE;
+  manager->next_scene_id = 0;
   
   return manager;
 }
@@ -35,24 +37,27 @@ scene_id scene_add(SceneManager* manager, const int scene_data_size, SceneOnStar
 void scene_transition(SceneManager* manager, scene_id id) {
   assert(id < manager->scenes_length);
   
-  // End old scene
-  if (manager->current_scene_id != SCENE_ID_NONE) {
-    Scene* old_scene = &manager->scenes[manager->current_scene_id];
-    old_scene->on_end(manager->game_data, old_scene->data);
-    playdate->system->realloc(manager->scenes[manager->current_scene_id].data, 0);  
-  }
-  
-  // Create new scene
-  // manager->current_scene_id = id;
-  manager->current_scene_id = id;
-  Scene* scene = &manager->scenes[id];
-  scene->data = playdate->system->realloc(NULL, scene->data_size);
-  scene->on_start(manager->game_data, scene->data);
+  manager->next_scene_id = id;
 }
 
 void scene_update(SceneManager* manager) {
-  if (manager->current_scene_id != SCENE_ID_NONE) { 
+  assert(manager->scenes_length > 0);
+
+  if (manager->next_scene_id != manager->current_scene_id) {    
+    // End old scene
+    if (manager->current_scene_id != SCENE_ID_NONE) {
+      Scene* old_scene = &manager->scenes[manager->current_scene_id];
+      old_scene->on_end(manager->game_data, old_scene->data);
+      playdate->system->realloc(manager->scenes[manager->current_scene_id].data, 0);  
+    }
+
+    // Create new scene
+    manager->current_scene_id = manager->next_scene_id;
     Scene* scene = &manager->scenes[manager->current_scene_id];
-    scene->on_update(manager->game_data, scene->data);
+    scene->data = playdate->system->realloc(NULL, scene->data_size);
+    scene->on_start(manager->game_data, scene->data);
   }
+
+  Scene* scene = &manager->scenes[manager->current_scene_id];
+  scene->on_update(manager->game_data, scene->data);
 }

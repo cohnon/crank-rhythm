@@ -18,28 +18,19 @@ void game_setup_pd(PlaydateAPI* pd) {
   playdate = pd;
 }
 
-// Playdate menu buttons
-static void menu_home_callback(void* userdata) {
-  scene_transition(data.scene_manager, data.song_list_scene);
-}
-
-static void menu_debug_callback(void* userdata) {
-  data.debug = playdate->system->getMenuItemValue(data.debug_menu);
-}
-
 
   // ********************* //
  //  Game Initialisation  //
 // ********************* //
 void game_init(void) {
   
-  // Playdate setup        
+  // Playdate setup
   playdate->display->setRefreshRate(50);
 
-  playdate->system->addMenuItem("Quit Song", menu_home_callback, NULL);
-  data.debug_menu = playdate->system->addCheckmarkMenuItem("Debug", 0, menu_debug_callback, NULL);
-
+  playdate->system->resetElapsedTime();
+  
   data.fileplayer = playdate->sound->fileplayer->newPlayer();
+  playdate->sound->fileplayer->setBufferLength(data.fileplayer, 5.0f);
   data.sound_effect = playdate->sound->sampleplayer->newPlayer();
   // HACK: this never frees the memory for start.wav
   playdate->sound->sampleplayer->setSample(data.sound_effect, playdate->sound->sample->load("audio/start"));
@@ -74,55 +65,14 @@ void game_init(void) {
  //  Game Update  //
 // ************* //
 void game_update(void) {
+  float current_time = playdate->system->getElapsedTime();
+  data.delta_time = current_time - data.time;
+  data.time = current_time;
+  
   scene_update(data.scene_manager);
 
   data.frame += 1;
 
-  // HACK make a better module
-  #ifdef DEBUG
-  if (data.debug) {
-    float width = 100;
-    float rows = 3;
-    playdate->system->drawFPS(0, 0);
-
-    playdate->graphics->fillRect(400 - width, rows * 18 + 4, width, 240 - (rows * 18 + 4), kColorWhite);
-    playdate->graphics->drawRect(400 - width, rows * 18 + 4, width, 240 - (rows * 18 + 4), kColorBlack);
-
-    for (int i = data.debug_log_start; i != data.debug_log_end; i = (i + 1) % 10) {
-      playdate->graphics->drawText(data.debug_log[i], 15, kASCIIEncoding, 400 - width + 2, (rows * 18 + 4) + (18 * ((i - data.debug_log_start + 10) % 10)));
-    }
-
-    char buffer[20];
-    playdate->graphics->fillRect(400 - width, 0, width, rows * 18 + 4, kColorWhite);
-    playdate->graphics->drawRect(400 - width, 0, width, rows * 18 + 4, kColorBlack);
-    if (data.song_player.beat_time > 0.0f) {		
-      sprintf(buffer, "time: %d.%d", (int)data.song_player.beat_time, (int)((data.song_player.beat_time - (int)data.song_player.beat_time) * 10.0f + 0.5f));
-    } else {
-      sprintf(buffer, "time: 0.0");
-    }
-    playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 400 - width + 2, 2 + 18 * 0);
-    
-    sprintf(buffer, "next: %d", (int)data.debug_next_note);
-    playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 400 - width + 2, 2 + 18 * 1);
-
-    sprintf(buffer, "pos: %d", data.debug_next_note_position);
-    playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 400 - width + 2, 2 + 18 * 2);
-  }
-  #endif
-}
-
-void debug_log(const char* msg) {
-  int i = 0;
-  for (; i < 14; ++i) {
-    if (msg[i] == '\n') {
-      break;
-    }
-    data.debug_log[data.debug_log_end][i] = msg[i];
-  }
-  data.debug_log[data.debug_log_end][i] = 0;
-
-  data.debug_log_end = (data.debug_log_end + 1) % 10;
-  if (data.debug_log_end == data.debug_log_start) {
-    data.debug_log_start += 1;
-  }
+  // Debug
+  playdate->system->drawFPS(0, 0);
 }

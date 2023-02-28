@@ -22,9 +22,10 @@ typedef struct Scene {
 
 typedef struct SceneManager {
   void* game_data;
-  scene_id current_scene_id;
   Scene scenes[MAX_SCENES];
   uint8_t scenes_length;
+  scene_id current_scene_id;
+  scene_id next_scene_id;
 } SceneManager;
 
 SceneManager* scene_new(void* game_data);

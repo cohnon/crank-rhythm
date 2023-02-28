@@ -10,6 +10,8 @@
 typedef struct GameData {
   // Data
   uint32_t frame;
+  float time;
+  float delta_time;
 
   // Scenes
   SceneManager* scene_manager;
@@ -34,14 +36,6 @@ typedef struct GameData {
   
   // Debug
   char song_path[32];
-  PDMenuItem* debug_menu;
-  int debug;
-  float debug_next_note;
-  int debug_next_note_position;
-  int debug_total_notes;
-  char debug_log[10][15];
-  int debug_log_start;
-  int debug_log_end;
 } GameData;
 
 extern PlaydateAPI* playdate;
@@ -49,7 +43,5 @@ extern PlaydateAPI* playdate;
 void game_setup_pd(PlaydateAPI* pd);
 void game_init(void);
 void game_update(void);
-
-void debug_log(const char* msg);
 
 #endif
