@@ -19,6 +19,7 @@ typedef struct BeatmapHeader {
   
   int length;
   char path[50];
+  char audio_path[50];
   int path_length;
 } BeatmapHeader;
 
@@ -37,6 +38,7 @@ typedef struct Beatmap {
   float offset;
   int notes_length;
   Note notes[BEATMAP_MAX_NOTES];
+  char audio_path[50];
 } Beatmap;
 
 int beatmap_load_header(BeatmapHeader* header, const char* path);

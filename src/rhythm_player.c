@@ -18,19 +18,17 @@ typedef struct RhythmPlayer {
   uint8_t is_loaded;
   uint8_t is_playing;
   uint8_t is_started;
+  uint8_t count;
 } RhythmPlayer;
 
 void rhythm_set_pd_ptr(PlaydateAPI* pd) {
   playdate = pd;
 }
 
-RhythmPlayer* rhythm_newPlayer(const float bpm, const float offset) {
-  assert(bpm > 0.0f && offset >= 0.0f);
+RhythmPlayer* rhythm_newPlayer() {
+  RhythmPlayer* rhythm = (RhythmPlayer*)playdate->system->realloc(NULL, sizeof(RhythmPlayer));
 
-  RhythmPlayer* rhythm = playdate->system->realloc(NULL, sizeof(RhythmPlayer));
-
-  rhythm->offset = offset;
-  rhythm->bps= bpm / 60.0f;
+  rhythm->fileplayer = playdate->sound->fileplayer->newPlayer();
   rhythm->is_loaded = 0;
   rhythm->is_playing = 0;
   rhythm->is_started = 0;
@@ -39,51 +37,62 @@ RhythmPlayer* rhythm_newPlayer(const float bpm, const float offset) {
 }
 
 void rhythm_freePlayer(RhythmPlayer* rhythm) {
-  if (rhythm->is_loaded) {
-    playdate->sound->fileplayer->freePlayer(rhythm->fileplayer);
-  }
-
+  playdate->sound->fileplayer->freePlayer(rhythm->fileplayer);
   playdate->system->realloc(rhythm, 0);
 }
 
 
-int rhythm_load(RhythmPlayer* rhythm, const char* path) {
-  rhythm->fileplayer = playdate->sound->fileplayer->newPlayer();
+int rhythm_load(RhythmPlayer* rhythm, const char* path, const float bpm, const float offset) {
+  assert(bpm > 0.0f && offset >= 0.0f);
+  
+  if (rhythm->is_playing) {
+    rhythm_stop(rhythm);
+  }
+  
   playdate->sound->fileplayer->setBufferLength(rhythm->fileplayer, 5.0f);
   int fileplayer_result = playdate->sound->fileplayer->loadIntoPlayer(rhythm->fileplayer, path);
 
   if (fileplayer_result == 0) {
-    playdate->sound->fileplayer->freePlayer(rhythm->fileplayer);
+    rhythm->is_loaded = 0;
     return 0;
   }
-
+  
+  rhythm->offset = offset;
+  rhythm->bps= bpm / 60.0f;
   rhythm->length_inverse = 1.0f / (playdate->sound->fileplayer->getLength(rhythm->fileplayer) - rhythm->offset);
   rhythm->is_loaded = 1;
+  rhythm->is_playing = 0;
 
   return 1;
 }
 
-void rhythm_play(RhythmPlayer* rhythm) {
+void rhythm_play(RhythmPlayer* rhythm, const int count) {
   if (!rhythm->is_loaded) {
     return;
   }
 
-  playdate->sound->fileplayer->play(rhythm->fileplayer, 1);
+  playdate->sound->fileplayer->play(rhythm->fileplayer, count);
   rhythm->audio_start = playdate->sound->getCurrentTime();
   rhythm->is_started = 1;
   rhythm->is_playing = 1;
+  rhythm->count = count;
 }
 
-void rhythm_playDelay(RhythmPlayer* rhythm, float delay) {
+void rhythm_playDelay(RhythmPlayer* rhythm, const float delay) {
   assert(delay >= 0.0f);
   
   if (!rhythm->is_loaded) {
     return;
   }
+  
+  if (rhythm->is_playing) {
+    rhythm_stop(rhythm);
+  }
 
   rhythm->audio_start = playdate->sound->getCurrentTime() + (int)delay * SAMPLE_RATE;
 
   rhythm->is_started = 1;
+  rhythm->count = 1;
 }
 
 void rhythm_stop(RhythmPlayer* rhythm) {
@@ -94,6 +103,20 @@ void rhythm_stop(RhythmPlayer* rhythm) {
   playdate->sound->fileplayer->stop(rhythm->fileplayer);
   rhythm->is_started = 0;
   rhythm->is_playing = 0;
+}
+
+void rhythm_skipTo(RhythmPlayer* rhythm, float beat_time) {
+  if (!rhythm->is_loaded) {
+    return;
+  }
+  
+  float time = (beat_time / rhythm->bps) + rhythm->offset;
+  playdate->sound->fileplayer->setOffset(rhythm->fileplayer, time);
+  rhythm->audio_start = playdate->sound->getCurrentTime() - ((int)time * SAMPLE_RATE);
+}
+
+FilePlayer* rhythm_getFileplayer(RhythmPlayer* rhythm) {
+  return rhythm->fileplayer;
 }
 
 int rhythm_isPlaying(RhythmPlayer* rhythm) {
@@ -123,3 +146,7 @@ float rhythm_getProgress(RhythmPlayer* rhythm) {
   return rhythm_getTime(rhythm) * rhythm->length_inverse;
 }
 
+int rhythm_isOnBeat(RhythmPlayer* rhythm, float threshold) {
+  float beat_time = rhythm_getBeatTime(rhythm);
+  return (beat_time - (int)beat_time) < threshold;
+}

@@ -1,6 +1,8 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include "beatmap.h"
+#include "rhythm_player.h"
 #include "scene.h"
 #include <pd_api.h>
 #include <stdint.h>
@@ -11,6 +13,9 @@ typedef struct GameData {
   uint32_t frame;
   float time;
   float delta_time;
+  
+  // Scene Data
+  BeatmapHeader header;
 
   // Scenes
   SceneManager* scene_manager;
@@ -29,11 +34,9 @@ typedef struct GameData {
   LCDFont* font;
   LCDFont* basic_font;
   SamplePlayer* sound_effect;
-  FilePlayer* fileplayer;
+  RhythmPlayer* rhythmplayer;
   int song_count;
-  
-  // Debug
-  char song_path[32];
+    
 } GameData;
 
 extern PlaydateAPI* playdate;

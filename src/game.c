@@ -28,10 +28,6 @@ void game_init(void) {
   // Playdate setup
   playdate->display->setRefreshRate(50);
 
-  playdate->system->resetElapsedTime();
-
-  data.fileplayer = playdate->sound->fileplayer->newPlayer();
-  playdate->sound->fileplayer->setBufferLength(data.fileplayer, 5.0f);
   data.sound_effect = playdate->sound->sampleplayer->newPlayer();
   // HACK: this never frees the memory for start.wav
   playdate->sound->sampleplayer->setSample(data.sound_effect, playdate->sound->sample->load("audio/start"));
@@ -51,6 +47,7 @@ void game_init(void) {
   data.bg_tile_bitmap    = graphics->loadBitmap("bg-tiles.png",      &err);
   data.light_grey_bitmap = graphics->loadBitmap("light-grey.png",    &err);
   data.clear_bitmap      = graphics->loadBitmap("clear.png",         &err);
+  data.rhythmplayer      = rhythm_newPlayer();
   
   graphics->setFont(data.font);  
   
@@ -69,12 +66,16 @@ void game_init(void) {
  //  Game Update  //
 // ************* //
 void game_update(void) {
-  float current_time = playdate->system->getElapsedTime();
-  data.delta_time = current_time - data.time;
+  
+  // Timing
+  float current_time = (float)playdate->system->getCurrentTimeMilliseconds() / 1000.0f;
+  data.delta_time = current_time - data.time;  
   data.time = current_time;
   
+
   scene_update(data.scene_manager);
 
+  
   data.frame += 1;
 
   // Debug

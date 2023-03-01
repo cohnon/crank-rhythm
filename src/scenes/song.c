@@ -8,6 +8,10 @@
 #include <assert.h>
 #include <string.h>
 
+
+// I'm refactoring most of this stuff out
+// It'll look clean soon i swer
+
 // TODO Make sightreading based on time not beat time
 static const float SIGHTREAD_DISTANCE = 3.0f / 170.0f;
 
@@ -189,59 +193,32 @@ void song_on_start(void* game_data, void* song_data) {
   
   quit_menu_item = playdate->system->addMenuItem("Quit Song", menu_home_callback, game_data);
 
-  song->score = 0;
-  display_score = 0;
-  song->miss_count = 0;
-  song->ok_count = 0;
-  song->good_count = 0;
-  song->perfect_count = 0;
-  song->normal_hit = 0;
-  song->normal_miss = 0;
-  song->danger_hit = 0;
-  song->danger_miss = 0;
-  song->combo = 0;
-  song->index = 0;
   song->health = MAX_HEALTH;
-  particle_end = 0;
-  particle_start = 0;
-  failed_to_load_song = 0;
 
-  // int load_song_result = load_song(game, song, &game->song_player, game->song_path);
-  int load_header_result = beatmap_load_header(&song->header, game->song_path);
-  if (load_header_result == BEATMAP_LOAD_FAIL) {
-    return;
-  }
-
-  int load_song_result = beatmap_load(&song->beatmap, &song->header);
-
+  int load_song_result = beatmap_load(&song->beatmap, &game->header);
   if (!load_song_result) {
     song->health = 0;
     failed_to_load_song = 1;
     return;
   }
 
-  // HACK
-  char audio_path[100] = "songs/";
-  strcat(audio_path, game->song_path);
-  strcat(audio_path, "/audio");
-  song->rhythmplayer = rhythm_newPlayer(song->beatmap.bpm, song->beatmap.offset);
-  rhythm_load(song->rhythmplayer, audio_path);
+  song->rhythmplayer = rhythm_newPlayer();
+  rhythm_load(song->rhythmplayer, song->beatmap.audio_path, song->beatmap.bpm, song->beatmap.offset);
   rhythm_playDelay(song->rhythmplayer, 3.0f);
-
-  // sp_play(game, &game->song_player);
-  // playdate->sound->fileplayer->setFinishCallback(game->song_player.current_song, song_finish_callback);
 }
 
 void song_on_update(void* game_data, void* song_data) {
   GameData* game = (GameData*)game_data;
   SongData* song = (SongData*)song_data;
     
-  // sp_update(game, &game->song_player);
-  
   PDButtons pressed;
   playdate->system->getButtonState(NULL, &pressed, NULL);
+  
+  float beat_time = rhythm_getBeatTime(song->rhythmplayer);
+  float time = rhythm_getTime(song->rhythmplayer);
+  float progress = rhythm_getProgress(song->rhythmplayer);
       
-  if (song->health < 1 || finished) {
+  if (song->health < 1 || progress > 1.0f) {
     // sp_stop(game, &game->song_player);
     rhythm_stop(song->rhythmplayer);
     if (pressed > 0) {
@@ -251,9 +228,6 @@ void song_on_update(void* game_data, void* song_data) {
   
   particles_update();
 
-
-  float beat_time = rhythm_getBeatTime(song->rhythmplayer);
-  float time = rhythm_getTime(song->rhythmplayer);    
   struct Note* note;
   for (int i = song->index; i < song->beatmap.notes_length; ++i) {
     note = &song->beatmap.notes[i];
@@ -370,7 +344,7 @@ void song_on_update(void* game_data, void* song_data) {
   }
   
   int x, y;
-  float progress;
+  float note_progress;
   for (int i = song->index; i < song->beatmap.notes_length; ++i) {
     note = &song->beatmap.notes[i];
     // not yet
@@ -379,14 +353,14 @@ void song_on_update(void* game_data, void* song_data) {
     }
     
     // The lerped values are precalculated
-    progress = 1.0f - (note->beat_time - beat_time) / (song->beatmap.bpm * SIGHTREAD_DISTANCE);
-    get_note_position(note->position, progress, &x, &y);
+    note_progress = 1.0f - (note->beat_time - beat_time) / (song->beatmap.bpm * SIGHTREAD_DISTANCE);
+    get_note_position(note->position, note_progress, &x, &y);
     
     draw_note(game, x, y, note->type, note->color);
   }
 
   playdate->system->getButtonState(&pressed, NULL, NULL);  
-  draw_disk(game, 200, 120, playdate->system->getCrankAngle(), /*pressed > 0*/beat_time - (int)beat_time > 0.1f);
+  draw_disk(game, 200, 120, playdate->system->getCrankAngle(), pressed > 0);
   
   particles_draw(game);
   
@@ -420,7 +394,7 @@ void song_on_update(void* game_data, void* song_data) {
   
   // timer
   playdate->graphics->drawEllipse(200 - 50 - 8 - 18 + offset, 240 - 3 - 18, 18, 18, 1, 0.0f, 0.0f, kColorBlack);
-  playdate->graphics->fillEllipse(200 - 50 - 8 - 18 + offset, 240 - 3 - 18, 18, 18, 0.0f, 360.0f * rhythm_getProgress(song->rhythmplayer), kColorBlack);
+  playdate->graphics->fillEllipse(200 - 50 - 8 - 18 + offset, 240 - 3 - 18, 18, 18, 0.0f, 360.0f * progress, kColorBlack);
   
   // accuracy
   float accuracy = song->accuracy * 100.0f;

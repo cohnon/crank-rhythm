@@ -1,30 +1,61 @@
 #include "song_list.h"
 
 #include "../game.h"
+#include <stdio.h>
+#include <string.h>
 
 
 // Callback for reading directory contents
 static void get_song(const char* filename, void* userdata) {
   SongListData* song_list = (SongListData*)userdata;
   
-  strcpy(song_list->map_ids[song_list->map_index], filename);
+  char buffer[50];
+  strcpy(buffer, filename);
 
-  int i = 0;
-  while (1) {
-    if (i > 50) {
+  // Remove ending '/' if it exists
+  for (int i = 1; i < 50; ++i) {
+    if (i == 50) {
       break;
     }
-    if (song_list->map_ids[song_list->map_index][i] == '/') {
-      song_list->map_ids[song_list->map_index][i] = 0;
+    if (buffer[i] == '/') {
+      buffer[i] = 0;
       break;
     }
-    if (song_list->map_ids[song_list->map_index][i] == 0) {
+    if (buffer[i] == 0) {
       break;
     }
-    i += 1;
   }
   
-  song_list->map_index += 1;	
+  beatmap_load_header(&song_list->song_headers[song_list->map_index], buffer);
+  
+  song_list->map_index += 1;
+}
+
+static void move_selector(GameData* game, SongListData* song_list, int direction) {
+  int start = song_list->map_select;
+  if (direction > 0) {    
+    song_list->map_select -= 1;
+    if (song_list->map_select < 0) {
+      song_list->map_select = 0;
+    }
+  } else {    
+    song_list->map_select += 1;
+    if (song_list->map_select == song_list->map_index) {
+      song_list->map_select = song_list->map_index - 1;
+    }
+  }
+  
+  if (song_list->map_select == 0) {
+    rhythm_stop(game->rhythmplayer);
+  } else if (song_list->map_select != start) {
+    FilePlayer* fileplayer = rhythm_getFileplayer(game->rhythmplayer);
+    BeatmapHeader* header = &song_list->song_headers[song_list->map_select];
+    rhythm_load(game->rhythmplayer, header->audio_path, header->bpm, header->offset);
+    rhythm_skipTo(game->rhythmplayer, 34.0f);
+    playdate->sound->fileplayer->setVolume(fileplayer, 0.0f, 0.0f);
+    playdate->sound->fileplayer->fadeVolume(fileplayer, 1.0f, 1.0f, 2 * 44100, NULL);
+    rhythm_play(game->rhythmplayer, 0);
+  }
 }
 
 void song_list_on_start(void* game_data, void* song_list_data) {
@@ -33,7 +64,7 @@ void song_list_on_start(void* game_data, void* song_list_data) {
   
   song_list->map_index = 1;
   song_list->map_select = 0;
-  strcpy(song_list->map_ids[0], "Tutorial");
+  strcpy(song_list->song_headers[0].name, "Tutorial");
   playdate->file->listfiles("songs", get_song, song_list_data, 0);
   
   song_list->map_select_range = playdate->system->getCrankAngle();
@@ -56,39 +87,27 @@ void song_list_on_update(void* game_data, void* song_list_data) {
 
   if (game->time > song_list->input_delay && crank_dist > 37.0f * 2.0f) {
     if (playdate->system->getCrankChange() > 0) {
-      song_list->map_select += 1;
-      if (song_list->map_select == song_list->map_index) {
-        song_list->map_select = song_list->map_index - 1;
-      }
+      move_selector(game, song_list, -1);
     } else {
-      song_list->map_select -= 1;
-      if (song_list->map_select < 0) {
-        song_list->map_select = 0;
-      }
+      move_selector(game, song_list, 1);
     }
     song_list->map_select_range = crank_angle;
   }
-      
+
   if (pressed & kButtonDown) {
-    song_list->map_select += 1;
-    if (song_list->map_select == song_list->map_index) {
-      song_list->map_select = song_list->map_index - 1;
-    }
+    move_selector(game, song_list, -1);
   }
   if (pressed & kButtonUp) {
-    song_list->map_select -= 1;
-    if (song_list->map_select < 0) {
-      song_list->map_select = 0;
-    }
+    move_selector(game, song_list, 1);
   }
   if (pressed & kButtonA) {
     if (song_list->map_select == 0) {
       scene_transition(game->scene_manager, game->tutorial_scene);
+      return;
     }
     
     // TODO: is there a way to pass the song name to another scene without polluting GameData?
-    strcpy(game->song_path, song_list->map_ids[song_list->map_select]);
-    playdate->sound->fileplayer->stop(game->fileplayer);
+    memcpy(&game->header, &song_list->song_headers[song_list->map_select], sizeof(BeatmapHeader));
     scene_transition(game->scene_manager, game->song_scene);
   }
   
@@ -102,16 +121,46 @@ void song_list_on_update(void* game_data, void* song_list_data) {
   playdate->graphics->fillPolygon(4, points, kColorBlack, kPolygonFillNonZero);
   playdate->graphics->setDrawMode(kDrawModeNXOR);
   for (int i = 0; i < song_list->map_index; ++i) {
-    playdate->graphics->drawText(song_list->map_ids[i], 100, kASCIIEncoding, 13, 20 + 30 * i);
+    playdate->graphics->drawText(song_list->song_headers[i].name, 100, kASCIIEncoding, 13, 25 + 30 * i);
   }
   playdate->graphics->setDrawMode(kDrawModeCopy);
 
   int length = 170;
   int y_pos = 19 + 30 * song_list->map_select;
   int selector_points[8] = {0, y_pos, length + 3, y_pos, length, y_pos + 30, 0, y_pos + 30};
+  if (rhythm_isOnBeat(game->rhythmplayer, 0.2f)) {
+    selector_points[1] -= 2;
+    selector_points[3] -= 2;
+    selector_points[5] += 2;
+    selector_points[7] += 2;
+    
+    selector_points[2] += 5;
+    selector_points[4] += 5;
+  }
   playdate->graphics->fillPolygon(4, selector_points, kColorXOR, kPolygonFillNonZero);
+  
+  // Info Box
+  playdate->graphics->fillRect(200, 20, 175, 200, kColorBlack);
+  playdate->graphics->fillRect(203, 23, 169, 194, kColorWhite);
+  
+  BeatmapHeader* header = &song_list->song_headers[song_list->map_select];
+  playdate->graphics->drawText(header->name, 20, kASCIIEncoding, 210, 30);
+  
+  if (song_list->map_select == 0) {
+    playdate->graphics->drawText("Learn the rulez\n(this is temp i swer)", 40, kASCIIEncoding, 210, 50);
+  } else {
+    char buffer[20];
+    sprintf(buffer, "BPM: %d", (int)header->bpm);
+    playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 210, 50);
+    playdate->graphics->drawText("Some other stuff", 20, kASCIIEncoding, 210, 70);
+  }
+  
 }
 
 void song_list_on_end(void* game_data, void* song_list_data) {
+  GameData* game = (GameData*)game_data;
   
+  FilePlayer* fileplayer = rhythm_getFileplayer(game->rhythmplayer);
+  playdate->sound->fileplayer->setVolume(fileplayer, 1.0f, 1.0f);    
+  rhythm_stop(game->rhythmplayer);  
 }

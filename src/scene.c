@@ -2,8 +2,25 @@
 #include "game.h"
 
 #include <assert.h>
+#include <string.h>
 
 static const uint8_t SCENE_ID_NONE = 0xff;
+
+typedef struct Scene {
+  void* data;
+  uint32_t data_size;
+  SceneOnStart on_start;
+  SceneOnUpdate on_update;
+  SceneOnEnd on_end;
+} Scene;
+
+typedef struct SceneManager {
+  void* game_data;
+  Scene scenes[MAX_SCENES];
+  uint8_t scenes_length;
+  scene_id current_scene_id;
+  scene_id next_scene_id;
+} SceneManager;
 
 SceneManager* scene_new(void* game_data) {
   SceneManager* manager = (SceneManager*)playdate->system->realloc(NULL, sizeof(SceneManager));
@@ -47,7 +64,9 @@ void scene_update(SceneManager* manager) {
     // End old scene
     if (manager->current_scene_id != SCENE_ID_NONE) {
       Scene* old_scene = &manager->scenes[manager->current_scene_id];
-      old_scene->on_end(manager->game_data, old_scene->data);
+      if (old_scene->on_end != NULL) {
+        old_scene->on_end(manager->game_data, old_scene->data);      
+      }
       playdate->system->realloc(manager->scenes[manager->current_scene_id].data, 0);  
     }
 
@@ -55,9 +74,16 @@ void scene_update(SceneManager* manager) {
     manager->current_scene_id = manager->next_scene_id;
     Scene* scene = &manager->scenes[manager->current_scene_id];
     scene->data = playdate->system->realloc(NULL, scene->data_size);
-    scene->on_start(manager->game_data, scene->data);
+    memset(scene->data, 0, scene->data_size);
+    
+    if (scene->on_start != NULL) {
+      scene->on_start(manager->game_data, scene->data);    
+    }
   }
 
   Scene* scene = &manager->scenes[manager->current_scene_id];
-  scene->on_update(manager->game_data, scene->data);
+  
+  if (scene->on_update != NULL) {
+    scene->on_update(manager->game_data, scene->data);  
+  }
 }

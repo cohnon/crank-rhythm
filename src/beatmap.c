@@ -81,7 +81,9 @@ int beatmap_load_header(BeatmapHeader* header, const char* path) {
   strcat(header->path, path);
   header->path_length = strlen(header->path);
 
+  strcpy(header->audio_path, header->path);
   strcat(header->path, "/beatmap.txt");
+  strcat(header->audio_path, "/audio");
   
   char beatmap_text[50];
   
@@ -112,10 +114,7 @@ int beatmap_load(Beatmap* beatmap, BeatmapHeader* header) {
   strcpy(beatmap->name, header->name);
   beatmap->bpm = header->bpm;
   beatmap->offset = header->offset;
-
-  
-  // int sp_load_result = sp_load(game, song_player, song_full_path, bpm, offset);
-    
+  strcpy(beatmap->audio_path, header->audio_path);
     
   char beatmap_buffer[50];
   int file_read_total = header->length;

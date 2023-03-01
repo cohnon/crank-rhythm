@@ -18,6 +18,9 @@ typedef struct MenuData {
   float progress;
   PDSynth* progress_synth;
   MenuNote bg_notes[MENU_NOTES_LENGTH];
+  float waveform[10];
+  int waveform_counter;
+  LCDBitmap* waveform_bitmap;
 } MenuData;
 
 void menu_on_start(void* game_data, void* menu_data);
