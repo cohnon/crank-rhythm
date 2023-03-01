@@ -158,8 +158,18 @@ addEventListener('keydown', (e) => {
     );
     insertNote(newNote);
     selectedNote = newNote;
+  } else if (e.key === 'w') {
+    deleteNoteButton.click();
+  } else if (e.key === 'a') {
+    typeRadio[0].click();
+  } else if (e.key === 's') {
+    typeRadio[1].click();
+  } else if (e.key === 'd') {
+    typeRadio[2].click();
   } else if (e.key === 'z') {
-    console.log(notes.map(note => note.beatTime));
+    colorRadio[0].click();
+  } else if (e.key === 'x') {
+    colorRadio[1].click();
   }
 });
 
