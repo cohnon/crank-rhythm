@@ -1,5 +1,6 @@
 #include "game.h"
 
+#include "rhythm_player.h"
 #include "scenes/menu.h"
 #include "scenes/song_list.h"
 #include "scenes/tutorial.h"
@@ -28,12 +29,15 @@ void game_init(void) {
   playdate->display->setRefreshRate(50);
 
   playdate->system->resetElapsedTime();
-  
+
   data.fileplayer = playdate->sound->fileplayer->newPlayer();
   playdate->sound->fileplayer->setBufferLength(data.fileplayer, 5.0f);
   data.sound_effect = playdate->sound->sampleplayer->newPlayer();
   // HACK: this never frees the memory for start.wav
   playdate->sound->sampleplayer->setSample(data.sound_effect, playdate->sound->sample->load("audio/start"));
+
+  // Initialise systems  
+  rhythm_set_pd_ptr(playdate);
 
   // Load Assets
   const char* err;

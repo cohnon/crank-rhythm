@@ -2,7 +2,6 @@
 #define GAME_H
 
 #include "scene.h"
-#include "song_player.h"
 #include <pd_api.h>
 #include <stdint.h>
 
@@ -31,7 +30,6 @@ typedef struct GameData {
   LCDFont* basic_font;
   SamplePlayer* sound_effect;
   FilePlayer* fileplayer;
-  struct SongPlayer song_player;
   int song_count;
   
   // Debug

@@ -1,12 +1,12 @@
 #include "song.h"
 
 #include "../game.h"
-#include "../song_player.h"
 #include "../drawing.h"
 #include "../beatmap.h"
 
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 // TODO Make sightreading based on time not beat time
 static const float SIGHTREAD_DISTANCE = 3.0f / 170.0f;
@@ -65,8 +65,7 @@ static void particles_make(uint16_t x, uint16_t y) {
   particles[particle_end] = (struct Particle){ x, y, 0 };
   pulses[particle_end] = 0;
   particle_end += 1;
-  particle_end %= 10;
-  
+  particle_end %= 10; 
 }
 
 static float lerp(float x1, float x2, float t) {
@@ -123,155 +122,6 @@ static void get_note_position(int position, float progress, int* x, int* y) {
   }
 }
 
-static int parse_int(const char* string, int* val) {
-  int index = 0;
-  *val = 0;
-  while (string[index] != ' ' && string[index] != '\n' && string[index] != 0) {
-    *val *= 10;
-    *val += string[index] - '0';
-
-    index += 1;
-  }
-
-  return index + 1;
-}
-
-static float parse_float(const char* string, float* val) {
-  int index = 0;
-  int decimal_index = -1;
-  *val = 0.0f;
-  while (string[index] != ' ' && string[index] != '\n' && string[index] != 0) {
-    if (decimal_index == -1 && string[index] == '.') {
-      decimal_index = index;
-      index += 1;
-      continue;
-    }
-    
-    if (decimal_index != -1) {
-      float decimal = powf(10.0f, (float)(index - decimal_index));
-      *val += (float)(string[index] - '0') / decimal;
-    } else {
-      *val *= 10.0f;
-      *val += (float)(string[index] - '0');
-    }
-    
-    index += 1;
-  }
-  return index + 1;
-}
-
-static int parse_string(const char* string, char* val) {
-  int index = 0;
-  while (string[index] != '\n' && string[index] != 0) {
-    val[index] = string[index];
-
-    index += 1;
-  }
-  
-  val[index] = 0;
-  
-  return index + 1;
-}
-
-// maybe scanf doesn't work??
-static int parse_header(const char* input, int* version, char* name, float* bpm, float* offset) {
-  int length = 0;
-  length += parse_int(input, version);
-  length += parse_string(input + length, name);
-  length += parse_float(input + length, bpm);  
-  length += parse_float(input + length, offset);
-  
-  return length;
-}
-
-static int parse_line(const char* line, int* type, int* color, int* position, float* beat_time) {
-  int length = 0;
-  length += parse_int(line + length, type);
-  length += parse_int(line + length, color);
-  length += parse_int(line + length, position);
-  length += parse_float(line + length, beat_time);
-
-  return length;
-}
-
-// static int load_song_old(GameData* game, SongData* song, struct SongPlayer* song_player, const char* path) {
-//   char dir_path[100] = "songs/";
-//   strcat(dir_path, path);
-  
-//   char beatmap_path[100];
-//   strcpy(beatmap_path, dir_path);
-//   strcat(beatmap_path, "/beatmap.txt");
-
-//   char beatmap_text[50];
-//   int file_text_offset;
-//   SDFile* file = playdate->file->open(beatmap_path, kFileRead);
-//   int file_read_result = playdate->file->read(file, beatmap_text, 50);
-  
-//   if (file_read_result == -1) {
-//     playdate->system->logToConsole("Failed to read %s", beatmap_path);
-//     return 0;
-//   }
-
-//   int version = 0;
-//   char song_name[26];
-//   float bpm = 0;
-//   float offset = 0;
-//   file_text_offset = parse_header(beatmap_text, &version, song_name, &bpm, &offset);  
-
-//   char header_display_buffer[20];
-//   sprintf(header_display_buffer, "%d %d.%d %d.%d", version, (int)bpm, (int)((bpm - (int)bpm)*10.0f + 0.5f), (int)offset, (int)((offset - (int)offset)*10.0f + 0.5f));
-    
-//   char song_full_path[100];
-//   strcpy(song_full_path, dir_path);
-//   strcat(song_full_path, "/audio");
-  
-//   int sp_load_result = sp_load(game, song_player, song_full_path, bpm, offset);
-  
-//   if (!sp_load_result) {
-//     playdate->system->logToConsole("Failed to load audio file");
-//     return 0;
-//   }
-  
-//   strcpy(song->name, song_name);
-//   song->note_count = 0;
-  
-//   // bpm of brain power is 170 (2.371 offset)
-//   float last_beat_time = -999.0f; // make sure each note is larger than the last
-  
-//   int type;
-//   int color;
-//   int position;
-//   float beat_time;
-//   int read;
-//   int file_read;
-//   while (song->note_count < 1000) {
-//     playdate->file->seek(file, file_text_offset, SEEK_SET);
-//     file_read = playdate->file->read(file, beatmap_text, 50);
-//     read = parse_line(beatmap_text, &type, &color, &position, &beat_time);
-
-//     if (file_read == 0) {
-//       break;
-//     }
-
-//     song->notes[song->note_count].type = type;
-//     song->notes[song->note_count].color = color;
-//     song->notes[song->note_count].position = position;
-//     song->notes[song->note_count].beat_time = beat_time;
-//     song->notes[song->note_count].time = beat_time * 60 / bpm;
-
-//     assert(beat_time > last_beat_time);
-
-//     file_text_offset += read;
-//     song->note_count += 1;
-//   }
-
-    
-//   char buffer[15];
-//   sprintf(buffer, "#notes: %d", song->note_count);
-    
-//   return 1;
-// }
-
 static float note_position_to_angle(int position) {  
   float note_angle;
   switch (position) {
@@ -327,7 +177,18 @@ static int angle_to_color(float crank_angle, float note_angle) {
 
 // HACK how can i not use a global here? the callback has no userdata >:(
 static int finished;
-static void reset(SongData* song) {  
+static void song_finish_callback(SoundSource* source) {
+  finished = 1;
+}
+
+// HACK too lazy to put this in game.h
+PDMenuItem* quit_menu_item;
+void song_on_start(void* game_data, void* song_data) {
+  GameData* game = (GameData*)game_data;
+  SongData* song = (SongData*)song_data;
+  
+  quit_menu_item = playdate->system->addMenuItem("Quit Song", menu_home_callback, game_data);
+
   song->score = 0;
   display_score = 0;
   song->miss_count = 0;
@@ -341,66 +202,68 @@ static void reset(SongData* song) {
   song->combo = 0;
   song->index = 0;
   song->health = MAX_HEALTH;
-  finished = 0;
   particle_end = 0;
   particle_start = 0;
   failed_to_load_song = 0;
-}
-
-static void song_finish_callback(SoundSource* source) {
-  finished = 1;
-}
-
-// HACK too lazy to put this in game.h
-PDMenuItem* quit_menu_item;
-void song_on_start(void* game_data, void* song_data) {
-  GameData* game = (GameData*)game_data;
-  SongData* song = (SongData*)song_data;
-  
-  quit_menu_item = playdate->system->addMenuItem("Quit Song", menu_home_callback, game_data);
-
-  reset(song);
 
   // int load_song_result = load_song(game, song, &game->song_player, game->song_path);
   int load_header_result = beatmap_load_header(&song->header, game->song_path);
+  if (load_header_result == BEATMAP_LOAD_FAIL) {
+    return;
+  }
+
   int load_song_result = beatmap_load(&song->beatmap, &song->header);
+
   if (!load_song_result) {
     song->health = 0;
     failed_to_load_song = 1;
     return;
   }
-  sp_play(game, &game->song_player);
-  playdate->sound->fileplayer->setFinishCallback(game->song_player.current_song, song_finish_callback);
+
+  // HACK
+  char audio_path[100] = "songs/";
+  strcat(audio_path, game->song_path);
+  strcat(audio_path, "/audio");
+  song->rhythmplayer = rhythm_newPlayer(song->beatmap.bpm, song->beatmap.offset);
+  rhythm_load(song->rhythmplayer, audio_path);
+  rhythm_playDelay(song->rhythmplayer, 3.0f);
+
+  // sp_play(game, &game->song_player);
+  // playdate->sound->fileplayer->setFinishCallback(game->song_player.current_song, song_finish_callback);
 }
 
 void song_on_update(void* game_data, void* song_data) {
   GameData* game = (GameData*)game_data;
   SongData* song = (SongData*)song_data;
     
-  sp_update(game, &game->song_player);
+  // sp_update(game, &game->song_player);
   
   PDButtons pressed;
   playdate->system->getButtonState(NULL, &pressed, NULL);
       
   if (song->health < 1 || finished) {
-    sp_stop(game, &game->song_player);
+    // sp_stop(game, &game->song_player);
+    rhythm_stop(song->rhythmplayer);
     if (pressed > 0) {
       scene_transition(game->scene_manager, game->song_list_scene);
     }
   }
   
   particles_update();
-  
+
+
+  float beat_time = rhythm_getBeatTime(song->rhythmplayer);
+  float time = rhythm_getTime(song->rhythmplayer);    
   struct Note* note;
-  for (int i = song->index; i < song->note_count; ++i) {
+  for (int i = song->index; i < song->beatmap.notes_length; ++i) {
     note = &song->beatmap.notes[i];
-    if (note->beat_time - game->song_player.bpm * SIGHTREAD_DISTANCE > game->song_player.beat_time) {
+    if (note->beat_time - song->beatmap.bpm * SIGHTREAD_DISTANCE > beat_time) {
       break;
     }
     
     if (note->type == NOTE_CLICK) {
       // too late
-      if (note->time + 0.11f < game->song_player.time) {
+      if (note->time + 0.11f < time) {
         song->miss_count += 1;
         song->index += 1;
         song->health -= 15;
@@ -413,7 +276,7 @@ void song_on_update(void* game_data, void* song_data) {
   
       // playdate->graphics->setStencilImage(clear_bitmap, 1);
       if (pressed > 0 && song->index == i) {
-        float diff = note->time - game->song_player.time;
+        float diff = note->time - time;
         float diff_2 = diff * diff;
         
         // inside clickable range
@@ -423,7 +286,7 @@ void song_on_update(void* game_data, void* song_data) {
           prompt_show = 1;
           prompt_ease = 1.0f;
           song->combo += 1;
-          float progress = 1.0f - (note->beat_time - game->song_player.beat_time) / (game->song_player.bpm * SIGHTREAD_DISTANCE);
+          float progress = 1.0f - (note->beat_time - beat_time) / (song->beatmap.bpm * SIGHTREAD_DISTANCE);
           int x, y;
           get_note_position(note->position, progress, &x, &y);
           particles_make(x, y);
@@ -443,11 +306,11 @@ void song_on_update(void* game_data, void* song_data) {
         }
       }
     } else if (note->type == NOTE_NORMAL) {
-      if (note->time < game->song_player.time) {
+      if (note->time < time) {
         song->index += 1;
         float note_angle = note_position_to_angle(note->position);    
         if (note->color == angle_to_color(playdate->system->getCrankAngle(), note_angle)) {
-          float progress = 1.0f - (note->beat_time - game->song_player.beat_time) / (game->song_player.bpm * SIGHTREAD_DISTANCE);
+          float progress = 1.0f - (note->beat_time - beat_time) / (song->beatmap.bpm * SIGHTREAD_DISTANCE);
           int x, y;
           get_note_position(note->position, progress, &x, &y);
           particles_make(x, y);
@@ -463,7 +326,7 @@ void song_on_update(void* game_data, void* song_data) {
         }
       }
     } else if (note->type == NOTE_DANGER) {
-      if (note->time < game->song_player.time) {
+      if (note->time < time) {
         song->index += 1;
         float note_angle = note_position_to_angle(note->position);
         if (note->color == angle_to_color(playdate->system->getCrankAngle(), note_angle)) {
@@ -508,22 +371,22 @@ void song_on_update(void* game_data, void* song_data) {
   
   int x, y;
   float progress;
-  for (int i = song->index; i < song->note_count; ++i) {
+  for (int i = song->index; i < song->beatmap.notes_length; ++i) {
     note = &song->beatmap.notes[i];
     // not yet
-    if (note->beat_time - game->song_player.bpm * SIGHTREAD_DISTANCE > game->song_player.beat_time) {
+    if (note->beat_time - song->beatmap.bpm * SIGHTREAD_DISTANCE > beat_time) {
       break;
     }
     
     // The lerped values are precalculated
-    progress = 1.0f - (note->beat_time - game->song_player.beat_time) / (game->song_player.bpm * SIGHTREAD_DISTANCE);
+    progress = 1.0f - (note->beat_time - beat_time) / (song->beatmap.bpm * SIGHTREAD_DISTANCE);
     get_note_position(note->position, progress, &x, &y);
     
     draw_note(game, x, y, note->type, note->color);
   }
 
   playdate->system->getButtonState(&pressed, NULL, NULL);  
-  draw_disk(game, 200, 120, playdate->system->getCrankAngle(), pressed > 0);
+  draw_disk(game, 200, 120, playdate->system->getCrankAngle(), /*pressed > 0*/beat_time - (int)beat_time > 0.1f);
   
   particles_draw(game);
   
@@ -557,7 +420,7 @@ void song_on_update(void* game_data, void* song_data) {
   
   // timer
   playdate->graphics->drawEllipse(200 - 50 - 8 - 18 + offset, 240 - 3 - 18, 18, 18, 1, 0.0f, 0.0f, kColorBlack);
-  playdate->graphics->fillEllipse(200 - 50 - 8 - 18 + offset, 240 - 3 - 18, 18, 18, 0.0f, 360.0f * game->song_player.percentage, kColorBlack);
+  playdate->graphics->fillEllipse(200 - 50 - 8 - 18 + offset, 240 - 3 - 18, 18, 18, 0.0f, 360.0f * rhythm_getProgress(song->rhythmplayer), kColorBlack);
   
   // accuracy
   float accuracy = song->accuracy * 100.0f;
@@ -599,10 +462,11 @@ void song_on_update(void* game_data, void* song_data) {
 }
 
 void song_on_end(void* game_data, void* song_data) {
-  GameData* game = (GameData*)game_data;
+  SongData* song = (SongData*)song_data;
 
   playdate->system->removeMenuItem(quit_menu_item);
 
-  sp_stop(game, &game->song_player);
+  rhythm_stop(song->rhythmplayer);
+  rhythm_freePlayer(song->rhythmplayer);
 }
 

@@ -2,6 +2,7 @@
 #define SONGSCENE_H
 
 #include "../beatmap.h"
+#include "../rhythm_player.h"
 #include <stdint.h>
 
 
@@ -39,6 +40,11 @@
 // };
 
 typedef struct SongData {
+  BeatmapHeader header;
+  Beatmap beatmap;
+  float countdown_timer;
+  RhythmPlayer* rhythmplayer;
+
   int index;
   int score;
   int health;
@@ -50,13 +56,9 @@ typedef struct SongData {
   int danger_miss;
   int normal_hit;
   int normal_miss;
-  int note_count;
   int combo;
   float accuracy;
-  // char name[50];
-  // struct Note* notes;
-  BeatmapHeader header;
-  Beatmap beatmap;
+
 } SongData;
 
 void song_on_start(void* game_data, void* song_data);
