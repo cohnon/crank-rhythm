@@ -3,7 +3,6 @@
 #include "game.h"
 #include "pd_api/pd_api_file.h"
 #include <string.h>
-#include <assert.h>
 
 static int parse_int(const char* string, int* val) {
   int index = 0;
@@ -55,10 +54,11 @@ static int parse_string(const char* string, char* val) {
   return index + 1;
 }
 
-static int parse_header(const char* input, int* version, char* name, float* bpm, float* offset) {
+static int parse_header(const char* input, int* version, char* name, char* artist, float* bpm, float* offset) {
   int length = 0;
   length += parse_int(input, version);
   length += parse_string(input + length, name);
+  length += parse_string(input + length, artist);
   length += parse_float(input + length, bpm);  
   length += parse_float(input + length, offset);
   
@@ -102,7 +102,7 @@ int beatmap_load_header(BeatmapHeader* header, const char* path) {
   playdate->file->close(file);
 
   int version; // useless rn but it could be useful
-  header->length = parse_header(beatmap_text, &version, header->name, &header->bpm, &header->offset);
+  header->length = parse_header(beatmap_text, &version, header->name, header->artist, &header->bpm, &header->offset);
   
   // remove /beatmap.txt from path
   header->path[header->path_length] = 0;
@@ -129,9 +129,8 @@ int beatmap_load(Beatmap* beatmap, BeatmapHeader* header) {
 
   int file_read;
   beatmap->notes_length = 0;
-  float last_beat_time = -999.0f; // make sure each note is larger than the last
 
-  while (beatmap->notes_length< 1000) {
+  while (beatmap->notes_length < 1000) {
     playdate->file->seek(file, file_read_total, SEEK_SET);
     file_read = playdate->file->read(file, beatmap_buffer, 50);
     read = parse_line(beatmap_buffer, &type, &color, &position, &beat_time);
@@ -145,8 +144,6 @@ int beatmap_load(Beatmap* beatmap, BeatmapHeader* header) {
     beatmap->notes[beatmap->notes_length].position = position;
     beatmap->notes[beatmap->notes_length].beat_time = beat_time;
     beatmap->notes[beatmap->notes_length].time = beat_time * 60 / header->bpm;
-
-    assert(beat_time > last_beat_time);
 
     file_read_total += read;
     beatmap->notes_length += 1;

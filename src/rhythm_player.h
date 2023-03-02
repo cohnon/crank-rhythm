@@ -10,7 +10,7 @@
 #ifndef RHYTHM_PLAYER_H
 #define RHYTHM_PLAYER_H
 
-#include "pd_api.h"
+#include <pd_api.h>
 
 typedef struct RhythmPlayer RhythmPlayer;
 
@@ -24,7 +24,7 @@ void rhythm_set_pd_ptr(PlaydateAPI* pd);
 
 // Creates a new rhythm player.
 // You are responsible for freeing it with 'rhythm_freePlayer'.
-RhythmPlayer* rhythm_newPlayer();
+RhythmPlayer* rhythm_newPlayer(void);
 
 // Frees the memory for a rhythm player.
 void rhythm_freePlayer(RhythmPlayer* rhythm);
@@ -38,23 +38,18 @@ int rhythm_load(RhythmPlayer* rhythm, const char* path, const float bpm, const f
  //  Rhythm Player Controls  //
 // ************************ //
 
-void rhythm_start_timer(RhythmPlayer* rhythm);
-void rhythm_check_timer(RhythmPlayer* rhythm);
-
 // Plays audio count times.
 // If count is 0, audio will loop until explicityly stopped.
 void rhythm_play(RhythmPlayer* rhythm, const int count);
 
-// Plays audio in [delay] seconds.
-// If delay isn't 0, getTime and getBeatTime will return negative values until the audio starts.
-// If delay isn't 0, the audio won't start until getTime or getDelayTime is called.
-void rhythm_playDelay(RhythmPlayer* rhythm, const float delay);
+// Plays audio in [offset] seconds.
+// If offset is positive, getTime and getBeatTime will return negative values until the audio starts.
+// Note: If offset is positive, the audio won't start until getTime or getDelayTime is called.
+// If offset is negative, the audio will start [offset] seconds into the track.
+void rhythm_playOffset(RhythmPlayer* rhythm, const float offset, const int count);
 
 // Stops audio
 void rhythm_stop(RhythmPlayer* rhythm);
-
-// Jumps to a specific time
-void rhythm_skipTo(RhythmPlayer* rhythm, float beat_time);
 
 
   // *********************** //

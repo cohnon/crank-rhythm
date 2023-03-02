@@ -1,6 +1,5 @@
 #include "rhythm_player.h"
 
-#include <assert.h>
 #include <stdint.h>
 
 static const int SAMPLE_RATE = 44100;
@@ -42,9 +41,7 @@ void rhythm_freePlayer(RhythmPlayer* rhythm) {
 }
 
 
-int rhythm_load(RhythmPlayer* rhythm, const char* path, const float bpm, const float offset) {
-  assert(bpm > 0.0f && offset >= 0.0f);
-  
+int rhythm_load(RhythmPlayer* rhythm, const char* path, const float bpm, const float offset) {  
   if (rhythm->is_playing) {
     rhythm_stop(rhythm);
   }
@@ -78,9 +75,7 @@ void rhythm_play(RhythmPlayer* rhythm, const int count) {
   rhythm->count = count;
 }
 
-void rhythm_playDelay(RhythmPlayer* rhythm, const float delay) {
-  assert(delay >= 0.0f);
-  
+void rhythm_playOffset(RhythmPlayer* rhythm, const float offset, const int count) {
   if (!rhythm->is_loaded) {
     return;
   }
@@ -89,10 +84,23 @@ void rhythm_playDelay(RhythmPlayer* rhythm, const float delay) {
     rhythm_stop(rhythm);
   }
 
-  rhythm->audio_start = playdate->sound->getCurrentTime() + (int)delay * SAMPLE_RATE;
-
   rhythm->is_started = 1;
-  rhythm->count = 1;
+  rhythm->count = count;
+  if (offset < 0.0f) {
+    rhythm->audio_start = playdate->sound->getCurrentTime() - (int)(offset) * SAMPLE_RATE;
+  } else {
+
+    rhythm->is_playing = 1;
+    rhythm->audio_start = playdate->sound->getCurrentTime();
+
+    if (offset > 0.0f) {
+      playdate->sound->fileplayer->setOffset(rhythm->fileplayer, offset);
+      rhythm->audio_start -= (int)offset * SAMPLE_RATE;
+    }
+
+    playdate->sound->fileplayer->play(rhythm->fileplayer, count);
+  }
+
 }
 
 void rhythm_stop(RhythmPlayer* rhythm) {
@@ -103,16 +111,6 @@ void rhythm_stop(RhythmPlayer* rhythm) {
   playdate->sound->fileplayer->stop(rhythm->fileplayer);
   rhythm->is_started = 0;
   rhythm->is_playing = 0;
-}
-
-void rhythm_skipTo(RhythmPlayer* rhythm, float beat_time) {
-  if (!rhythm->is_loaded) {
-    return;
-  }
-  
-  float time = (beat_time / rhythm->bps) + rhythm->offset;
-  playdate->sound->fileplayer->setOffset(rhythm->fileplayer, time);
-  rhythm->audio_start = playdate->sound->getCurrentTime() - ((int)time * SAMPLE_RATE);
 }
 
 FilePlayer* rhythm_getFileplayer(RhythmPlayer* rhythm) {
@@ -147,6 +145,9 @@ float rhythm_getProgress(RhythmPlayer* rhythm) {
 }
 
 int rhythm_isOnBeat(RhythmPlayer* rhythm, float threshold) {
-  float beat_time = rhythm_getBeatTime(rhythm);
+  float beat_time = rhythm_getBeatTime(rhythm) - threshold / 2.0f;
+  if (beat_time < 0.0f) {
+    return (-beat_time - (int)(-beat_time) > 1.0f - threshold);
+  }
   return (beat_time - (int)beat_time) < threshold;
 }

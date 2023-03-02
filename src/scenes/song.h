@@ -30,20 +30,13 @@
 
 #define MAX_HEALTH 100
 
-// struct Note {
-//   uint8_t type;
-//   uint8_t color;
-//   uint8_t position;
-//   uint8_t extra_data; // just to fill out the padding why not
-//   float beat_time;
-//   float time;
-// };
-
 typedef struct SongData {
   BeatmapHeader header;
   Beatmap beatmap;
   float countdown_timer;
   RhythmPlayer* rhythmplayer;
+  PDMenuItem* quit_menu_item;
+  int finished;
 
   int index;
   int score;

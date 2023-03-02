@@ -5,15 +5,13 @@
 #include "../beatmap.h"
 
 #include <stdio.h>
-#include <assert.h>
-#include <string.h>
 
 
 // I'm refactoring most of this stuff out
 // It'll look clean soon i swer
 
-// TODO Make sightreading based on time not beat time
-static const float SIGHTREAD_DISTANCE = 3.0f / 170.0f;
+// HACK this should be in song_data
+static const float SIGHTREAD_DISTANCE = 1.0f;
 
 // HACK i'll get rid of these soon
 int display_score;
@@ -179,21 +177,14 @@ static int angle_to_color(float crank_angle, float note_angle) {
   }
 }
 
-// HACK how can i not use a global here? the callback has no userdata >:(
-static int finished;
-static void song_finish_callback(SoundSource* source) {
-  finished = 1;
-}
-
-// HACK too lazy to put this in game.h
-PDMenuItem* quit_menu_item;
 void song_on_start(void* game_data, void* song_data) {
   GameData* game = (GameData*)game_data;
   SongData* song = (SongData*)song_data;
   
-  quit_menu_item = playdate->system->addMenuItem("Quit Song", menu_home_callback, game_data);
+  song->quit_menu_item = playdate->system->addMenuItem("Quit Song", menu_home_callback, game_data);
 
   song->health = MAX_HEALTH;
+  display_score = 0;
 
   int load_song_result = beatmap_load(&song->beatmap, &game->header);
   if (!load_song_result) {
@@ -204,7 +195,7 @@ void song_on_start(void* game_data, void* song_data) {
 
   song->rhythmplayer = rhythm_newPlayer();
   rhythm_load(song->rhythmplayer, song->beatmap.audio_path, song->beatmap.bpm, song->beatmap.offset);
-  rhythm_playDelay(song->rhythmplayer, 3.0f);
+  rhythm_playOffset(song->rhythmplayer, -3.0f, 0);
 }
 
 void song_on_update(void* game_data, void* song_data) {
@@ -214,11 +205,15 @@ void song_on_update(void* game_data, void* song_data) {
   PDButtons pressed;
   playdate->system->getButtonState(NULL, &pressed, NULL);
   
-  float beat_time = rhythm_getBeatTime(song->rhythmplayer);
+  // float beat_time = rhythm_getBeatTime(song->rhythmplayer);
   float time = rhythm_getTime(song->rhythmplayer);
   float progress = rhythm_getProgress(song->rhythmplayer);
+
+  if (progress > 1.0f) {
+    song->finished = 1;
+  }
       
-  if (song->health < 1 || progress > 1.0f) {
+  if (song->health < 1 || song->finished) {
     // sp_stop(game, &game->song_player);
     rhythm_stop(song->rhythmplayer);
     if (pressed > 0) {
@@ -231,7 +226,7 @@ void song_on_update(void* game_data, void* song_data) {
   struct Note* note;
   for (int i = song->index; i < song->beatmap.notes_length; ++i) {
     note = &song->beatmap.notes[i];
-    if (note->beat_time - song->beatmap.bpm * SIGHTREAD_DISTANCE > beat_time) {
+    if ((note->beat_time * 60.0f / song->beatmap.bpm) - SIGHTREAD_DISTANCE  > time) {
       break;
     }
     
@@ -260,7 +255,7 @@ void song_on_update(void* game_data, void* song_data) {
           prompt_show = 1;
           prompt_ease = 1.0f;
           song->combo += 1;
-          float progress = 1.0f - (note->beat_time - beat_time) / (song->beatmap.bpm * SIGHTREAD_DISTANCE);
+          float progress = 1.0f - ((note->beat_time * 60.0f / song->beatmap.bpm) - time) / song->beatmap.bpm;
           int x, y;
           get_note_position(note->position, progress, &x, &y);
           particles_make(x, y);
@@ -284,7 +279,7 @@ void song_on_update(void* game_data, void* song_data) {
         song->index += 1;
         float note_angle = note_position_to_angle(note->position);    
         if (note->color == angle_to_color(playdate->system->getCrankAngle(), note_angle)) {
-          float progress = 1.0f - (note->beat_time - beat_time) / (song->beatmap.bpm * SIGHTREAD_DISTANCE);
+          float progress = 1.0f - ((note->beat_time * 60.0f / song->beatmap.bpm) - time) / SIGHTREAD_DISTANCE;
           int x, y;
           get_note_position(note->position, progress, &x, &y);
           particles_make(x, y);
@@ -331,10 +326,10 @@ void song_on_update(void* game_data, void* song_data) {
 
   // Draw
   playdate->graphics->clear(kColorWhite);
-  if (song->health < 1 || finished) {
+  if (song->health < 1 || song->finished) {
     playdate->graphics->drawText("Game Over", 9, kASCIIEncoding, 200, 120);
     char buffer[100];
-    sprintf(buffer, "Score: %d", song->score);
+    snprintf(buffer, 100, "Score: %d", song->score);
     playdate->graphics->drawText(buffer, 99, kASCIIEncoding, 200, 150);
     if (failed_to_load_song) {
       playdate->graphics->drawText("Failed to open song", 99, kASCIIEncoding, 0, 10);
@@ -348,12 +343,12 @@ void song_on_update(void* game_data, void* song_data) {
   for (int i = song->index; i < song->beatmap.notes_length; ++i) {
     note = &song->beatmap.notes[i];
     // not yet
-    if (note->beat_time - song->beatmap.bpm * SIGHTREAD_DISTANCE > beat_time) {
+    if ((note->beat_time * 60.0f / song->beatmap.bpm) - SIGHTREAD_DISTANCE > time) {
       break;
     }
     
     // The lerped values are precalculated
-    note_progress = 1.0f - (note->beat_time - beat_time) / (song->beatmap.bpm * SIGHTREAD_DISTANCE);
+    note_progress = 1.0f - ((note->beat_time / song->beatmap.bpm * 60.0f) - time) / SIGHTREAD_DISTANCE;
     get_note_position(note->position, note_progress, &x, &y);
     
     draw_note(game, x, y, note->type, note->color);
@@ -372,7 +367,7 @@ void song_on_update(void* game_data, void* song_data) {
     int diff = song->score - display_score;
     display_score += (diff + 1) >> 1;
   }
-  sprintf(display_buffer, "%d", display_score);
+  snprintf(display_buffer, 50, "%d", display_score);
   playdate->graphics->drawText(display_buffer, 50, kASCIIEncoding, 200 - playdate->graphics->getTextWidth(game->font, display_buffer, 26, kASCIIEncoding, 0) / 2.0f, 200);
   
   // name
@@ -398,7 +393,7 @@ void song_on_update(void* game_data, void* song_data) {
   
   // accuracy
   float accuracy = song->accuracy * 100.0f;
-  sprintf(display_buffer, "%d.%d%%", (int)accuracy, (int)((accuracy - (int)(accuracy)) * 100.0f + 0.5f));
+  snprintf(display_buffer, 50, "%d.%d%%", (int)accuracy, (int)((accuracy - (int)(accuracy)) * 100.0f + 0.5f));
   // playdate->graphics->setFont(game->accuracy_font);
   playdate->graphics->drawText(display_buffer, 50, kASCIIEncoding, 200 + 50 + 5 + offset, 240 - playdate->graphics->getFontHeight(game->font));
   // playdate->graphics->setFont(game->font);
@@ -430,7 +425,7 @@ void song_on_update(void* game_data, void* song_data) {
   
   // combo
   if (song->combo > 0) {
-    sprintf(display_buffer, "Combo %d", song->combo);
+    snprintf(display_buffer, 50, "Combo %d", song->combo);
     playdate->graphics->drawText(display_buffer, 50, kASCIIEncoding, 200 - playdate->graphics->getTextWidth(game->font, display_buffer, 50, kASCIIEncoding, 0) / 2, height - 20 - (prompt_y >> 1));
   }
 }
@@ -438,7 +433,7 @@ void song_on_update(void* game_data, void* song_data) {
 void song_on_end(void* game_data, void* song_data) {
   SongData* song = (SongData*)song_data;
 
-  playdate->system->removeMenuItem(quit_menu_item);
+  playdate->system->removeMenuItem(song->quit_menu_item);
 
   rhythm_stop(song->rhythmplayer);
   rhythm_freePlayer(song->rhythmplayer);

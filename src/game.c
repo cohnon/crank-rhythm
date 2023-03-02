@@ -42,11 +42,9 @@ void game_init(void) {
   data.basic_font        = graphics->loadFont  ("fonts/Basic.pft",   &err);
   data.title_bitmaps[0]  = graphics->loadBitmap("images/title1.png", &err);
   data.title_bitmaps[1]  = graphics->loadBitmap("images/title2.png", &err);
-  data.black_x_bitmap    = graphics->loadBitmap("x.png",             &err);
-  data.white_x_bitmap    = graphics->loadBitmap("white_x.png",       &err);
-  data.bg_tile_bitmap    = graphics->loadBitmap("bg-tiles.png",      &err);
-  data.light_grey_bitmap = graphics->loadBitmap("light-grey.png",    &err);
-  data.clear_bitmap      = graphics->loadBitmap("clear.png",         &err);
+  data.black_x_bitmap    = graphics->loadBitmap("images/x.png",             &err);
+  data.white_x_bitmap    = graphics->loadBitmap("images/white_x.png",       &err);
+  data.clear_bitmap      = graphics->loadBitmap("images/clear.png",         &err);
   data.rhythmplayer      = rhythm_newPlayer();
   
   graphics->setFont(data.font);  

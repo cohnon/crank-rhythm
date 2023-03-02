@@ -3,14 +3,11 @@
 #include "scenes/song.h"
 
 #include "pd_api/pd_api_gfx.h"
-#include <assert.h>
 
 #define DISK_SIZE 64
 #define DISK_SIZE_MAX 74
 
-void draw_disk(const struct GameData* data, float pos_x, float pos_y, float angle, int big) {
-  assert(big == 0 || big == 1);
-  
+void draw_disk(const struct GameData* data, float pos_x, float pos_y, float angle, int big) {  
   int size = DISK_SIZE + big * (DISK_SIZE_MAX - DISK_SIZE);
   
   int offset = (DISK_SIZE_MAX - size) >> 1;
@@ -60,5 +57,5 @@ void draw_note(const struct GameData* data, const float pos_x, const float pos_y
       break;
     default:
       break;
-  }  
+  }
 }

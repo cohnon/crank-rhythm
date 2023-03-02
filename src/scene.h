@@ -14,7 +14,7 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include "pd_api.h"
+#include <pd_api.h>
 #include <stdint.h>
 
 #define MAX_SCENES 10

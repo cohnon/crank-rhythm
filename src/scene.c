@@ -1,8 +1,6 @@
 #include "scene.h"
-#include "game.h"
 
-#include <assert.h>
-#include <string.h>
+#include "game.h"
 
 static const uint8_t SCENE_ID_NONE = 0xff;
 
@@ -52,14 +50,10 @@ scene_id scene_add(SceneManager* manager, const int scene_data_size, SceneOnStar
 }
 
 void scene_transition(SceneManager* manager, scene_id id) {
-  assert(id < manager->scenes_length);
-  
   manager->next_scene_id = id;
 }
 
 void scene_update(SceneManager* manager) {
-  assert(manager->scenes_length > 0);
-
   if (manager->next_scene_id != manager->current_scene_id) {    
     // End old scene
     if (manager->current_scene_id != SCENE_ID_NONE) {
@@ -74,7 +68,7 @@ void scene_update(SceneManager* manager) {
     manager->current_scene_id = manager->next_scene_id;
     Scene* scene = &manager->scenes[manager->current_scene_id];
     scene->data = playdate->system->realloc(NULL, scene->data_size);
-    memset(scene->data, 0, scene->data_size);
+    // memset(scene->data, 0, scene->data_size);
     
     if (scene->on_start != NULL) {
       scene->on_start(manager->game_data, scene->data);    

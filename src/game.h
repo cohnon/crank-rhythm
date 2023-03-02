@@ -28,8 +28,6 @@ typedef struct GameData {
   LCDBitmap* title_bitmaps[2];
   LCDBitmap* black_x_bitmap;
   LCDBitmap* white_x_bitmap;
-  LCDBitmap* bg_tile_bitmap;
-  LCDBitmap* light_grey_bitmap;
   LCDBitmap* clear_bitmap;
   LCDFont* font;
   LCDFont* basic_font;

@@ -63,7 +63,7 @@ void menu_on_update(void* game_data, void* menu_data) {
   
   // Crank to start
   float crank = playdate->system->getCrankChange();
-  if (crank > 1.0f) {
+  if (crank > 0.5f) {
     menu->progress += game->delta_time / CRANK_DURATION;
   } else {
     menu->progress -= game->delta_time * 3.0f;

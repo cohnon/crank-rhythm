@@ -271,7 +271,7 @@ overlayCanvas.addEventListener('mousemove', e => {
     if (progress > 1) progress = 1;
     wavesurfer.seekAndCenter(progress);
   } else if (clickingNote) {
-    let noteTime = (e.clientX + waveform.firstChild.scrollLeft) / wavesurfer.params.minPxPerSec;
+    let noteTime = (e.clientX + waveform.firstChild.scrollLeft) / wavesurfer.params.minPxPerSec - Number.parseFloat(offsetInput.value);
     let noteBeatTime = noteTime / 60 * Number.parseFloat(bpmInput.value);
     if (!findNoteByBeatTime(noteBeatTime).exists) {
       removeNote(selectedNote);

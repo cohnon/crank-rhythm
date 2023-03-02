@@ -2,7 +2,6 @@
 
 #include "../game.h"
 #include <stdio.h>
-#include <string.h>
 
 
 // Callback for reading directory contents
@@ -51,10 +50,9 @@ static void move_selector(GameData* game, SongListData* song_list, int direction
     FilePlayer* fileplayer = rhythm_getFileplayer(game->rhythmplayer);
     BeatmapHeader* header = &song_list->song_headers[song_list->map_select];
     rhythm_load(game->rhythmplayer, header->audio_path, header->bpm, header->offset);
-    rhythm_skipTo(game->rhythmplayer, 34.0f);
     playdate->sound->fileplayer->setVolume(fileplayer, 0.0f, 0.0f);
     playdate->sound->fileplayer->fadeVolume(fileplayer, 1.0f, 1.0f, 2 * 44100, NULL);
-    rhythm_play(game->rhythmplayer, 0);
+    rhythm_playOffset(game->rhythmplayer, 60.0f, 0);
   }
 }
 
@@ -149,10 +147,11 @@ void song_list_on_update(void* game_data, void* song_list_data) {
   if (song_list->map_select == 0) {
     playdate->graphics->drawText("Learn the rulez\n(this is temp i swer)", 40, kASCIIEncoding, 210, 50);
   } else {
-    char buffer[20];
-    sprintf(buffer, "BPM: %d", (int)header->bpm);
+    char buffer[50];
+    snprintf(buffer, 50, "BPM: %d", (int)header->bpm);
     playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 210, 50);
-    playdate->graphics->drawText("Some other stuff", 20, kASCIIEncoding, 210, 70);
+    snprintf(buffer, 50, "Artist: %s", header->artist);
+    playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 210, 70);
   }
   
 }
