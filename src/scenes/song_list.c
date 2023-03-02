@@ -152,6 +152,25 @@ void song_list_on_update(void* game_data, void* song_list_data) {
     playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 210, 50);
     snprintf(buffer, 50, "Artist: %s", header->artist);
     playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 210, 70);
+    switch (header->difficulty) {
+      case 0:
+        playdate->graphics->drawText("Beginner", 50, kASCIIEncoding, 210, 90);
+        break;
+      case 1:
+        playdate->graphics->drawText("Easy", 50, kASCIIEncoding, 210, 90);
+        break;
+      case 2:
+        playdate->graphics->drawText("Normal", 50, kASCIIEncoding, 210, 90);
+        break;
+      case 3:
+        playdate->graphics->drawText("Hard", 50, kASCIIEncoding, 210, 90);
+        break;
+      case 4:
+        playdate->graphics->drawText("Insane", 50, kASCIIEncoding, 210, 90);
+        break;
+    }
+    snprintf(buffer, 50, "HS: %d", header->highscore);
+    playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 210, 110);
   }
   
 }

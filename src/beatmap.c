@@ -2,12 +2,13 @@
 
 #include "game.h"
 #include "pd_api/pd_api_file.h"
+#include <stdio.h>
 #include <string.h>
 
 static int parse_int(const char* string, int* val) {
   int index = 0;
   *val = 0;
-  while (string[index] != ' ' && string[index] != '\n' && string[index] != 0) {
+  while (string[index] != ' ' && string[index] != '\n' && string[index] > 0) {
     *val *= 10;
     *val += string[index] - '0';
 
@@ -21,7 +22,7 @@ static float parse_float(const char* string, float* val) {
   int index = 0;
   int decimal_index = -1;
   *val = 0.0f;
-  while (string[index] != ' ' && string[index] != '\n' && string[index] != 0) {
+  while (string[index] != ' ' && string[index] != '\n' && string[index] > 0) {
     if (decimal_index == -1 && string[index] == '.') {
       decimal_index = index;
       index += 1;
@@ -43,7 +44,7 @@ static float parse_float(const char* string, float* val) {
 
 static int parse_string(const char* string, char* val) {
   int index = 0;
-  while (string[index] != '\n' && string[index] != 0) {
+  while (string[index] != '\n' && string[index] > 0) {
     val[index] = string[index];
 
     index += 1;
@@ -54,11 +55,12 @@ static int parse_string(const char* string, char* val) {
   return index + 1;
 }
 
-static int parse_header(const char* input, int* version, char* name, char* artist, float* bpm, float* offset) {
+static int parse_header(const char* input, int* version, char* name, char* artist, int* difficulty, float* bpm, float* offset) {
   int length = 0;
   length += parse_int(input, version);
   length += parse_string(input + length, name);
   length += parse_string(input + length, artist);
+  length += parse_int(input + length, difficulty);
   length += parse_float(input + length, bpm);  
   length += parse_float(input + length, offset);
   
@@ -98,14 +100,24 @@ int beatmap_load_header(BeatmapHeader* header, const char* path) {
   if (file_read_result == -1) {
     return BEATMAP_LOAD_FAIL;
   }
-  
+    
   playdate->file->close(file);
 
   int version; // useless rn but it could be useful
-  header->length = parse_header(beatmap_text, &version, header->name, header->artist, &header->bpm, &header->offset);
+  header->length = parse_header(beatmap_text, &version, header->name, header->artist, &header->difficulty, &header->bpm, &header->offset);
+  header->highscore = 0;
   
   // remove /beatmap.txt from path
   header->path[header->path_length] = 0;
+  
+  // Get highscore
+  SDFile* datafile = playdate->file->open(header->name, kFileReadData);
+  if (datafile != NULL) {
+    char buffer[20];
+    playdate->file->read(datafile, buffer, 20);
+    parse_int(buffer, &header->highscore);
+    playdate->file->close(datafile);
+  }
   
   return BEATMAP_LOAD_SUCCESS;
 }

@@ -3,6 +3,7 @@
 #include "../game.h"
 #include "../drawing.h"
 #include "../beatmap.h"
+#include "pd_api/pd_api_file.h"
 
 #include <stdio.h>
 
@@ -10,23 +11,22 @@
 // I'm refactoring most of this stuff out
 // It'll look clean soon i swer
 
-// HACK this should be in song_data
 static const float SIGHTREAD_DISTANCE = 1.0f;
 
 // HACK i'll get rid of these soon
-int display_score;
-
-float prompt_ease;
-int prompt_show;
-int prompt;
+static float prompt_ease;
+static int prompt_show;
+static int prompt;
 
 // sin values [0, 2pi]
-float health_shake[11] = {0, 2, 4, 4, 2, 0, -3, -5, -5, -3, 0};
-int missed;
-int health_shake_index = 10;
+static const float HEALTH_SHAKE[11] = {0, 2, 4, 4, 2, 0, -3, -5, -5, -3, 0};
+static int missed;
+static int health_shake_index = 10;
 
-int failed_to_load_song = 0;
+static int failed_to_load_song = 0;
 
+// TODO: make separate particle system
+//       these aren't even particles
 struct Particle {
   uint16_t x;
   uint16_t y;
@@ -184,7 +184,7 @@ void song_on_start(void* game_data, void* song_data) {
   song->quit_menu_item = playdate->system->addMenuItem("Quit Song", menu_home_callback, game_data);
 
   song->health = MAX_HEALTH;
-  display_score = 0;
+  song->display_score = 0;
 
   int load_song_result = beatmap_load(&song->beatmap, &game->header);
   if (!load_song_result) {
@@ -209,8 +209,18 @@ void song_on_update(void* game_data, void* song_data) {
   float time = rhythm_getTime(song->rhythmplayer);
   float progress = rhythm_getProgress(song->rhythmplayer);
 
+  // TODO: it's not clear that this is only called once
   if (progress > 1.0f) {
     song->finished = 1;
+    
+    if (song->score > game->header.highscore) {
+      SDFile* file = playdate->file->open(song->beatmap.name, kFileWrite);
+      char buffer[100];
+      int written = snprintf(buffer, 100, "%d", song->score);
+      playdate->system->logToConsole("%d", written);
+      playdate->file->write(file, buffer, written);
+      playdate->file->close(file);
+    }
   }
       
   if (song->health < 1 || song->finished) {
@@ -363,11 +373,11 @@ void song_on_update(void* game_data, void* song_data) {
   // --
   // score
   char display_buffer[50];
-  if (display_score < song->score) {
-    int diff = song->score - display_score;
-    display_score += (diff + 1) >> 1;
+  if (song->display_score < song->score) {
+    int diff = song->score - song->display_score;
+    song->display_score += (diff + 1) >> 1;
   }
-  snprintf(display_buffer, 50, "%d", display_score);
+  snprintf(display_buffer, 50, "%d", song->display_score);
   playdate->graphics->drawText(display_buffer, 50, kASCIIEncoding, 200 - playdate->graphics->getTextWidth(game->font, display_buffer, 26, kASCIIEncoding, 0) / 2.0f, 200);
   
   // name
@@ -381,7 +391,7 @@ void song_on_update(void* game_data, void* song_data) {
   if (health_shake_index > 10) {
     health_shake_index = 10;
   }
-  int offset = health_shake[health_shake_index];
+  int offset = HEALTH_SHAKE[health_shake_index];
   health_shake_index += 2;
   
   playdate->graphics->drawRect(200 - 50 + offset, 240 - 18 - 3, 100, 18, kColorBlack);

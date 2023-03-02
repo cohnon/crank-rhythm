@@ -68,7 +68,7 @@ void scene_update(SceneManager* manager) {
     manager->current_scene_id = manager->next_scene_id;
     Scene* scene = &manager->scenes[manager->current_scene_id];
     scene->data = playdate->system->realloc(NULL, scene->data_size);
-    // memset(scene->data, 0, scene->data_size);
+    memset(scene->data, 0, scene->data_size);
     
     if (scene->on_start != NULL) {
       scene->on_start(manager->game_data, scene->data);    

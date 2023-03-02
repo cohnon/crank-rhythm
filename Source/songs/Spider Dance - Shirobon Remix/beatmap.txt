@@ -1,6 +1,7 @@
 0
 Spider Dance
 Shirobon
+0
 115
 0.06
 1 1 7 0

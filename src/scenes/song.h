@@ -40,6 +40,7 @@ typedef struct SongData {
 
   int index;
   int score;
+  int display_score;
   int health;
   int miss_count;
   int ok_count;

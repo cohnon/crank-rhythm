@@ -13,6 +13,9 @@ typedef struct BeatmapHeader {
   char name[BEATMAP_MAX_STRING];
   char artist[BEATMAP_MAX_STRING];
   char creator[BEATMAP_MAX_STRING];
+  int difficulty;
+  
+  int highscore;
   
   float bpm;
   float offset;
