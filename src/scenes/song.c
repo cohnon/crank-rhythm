@@ -219,6 +219,8 @@ void song_on_start(void* game_data, void* song_data) {
   song->rhythmplayer = rhythm_newPlayer();
   rhythm_load(song->rhythmplayer, song->beatmap.audio_path, song->beatmap.bpm, song->beatmap.offset);
   rhythm_playOffset(song->rhythmplayer, -3.0f, 0);
+
+  playdate->graphics->clear(kColorWhite);
 }
 
 void song_on_update(void* game_data, void* song_data) {

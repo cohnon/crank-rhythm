@@ -234,7 +234,7 @@ void particles_update(ParticleSystem* particles) {
       } else {
         // We ran out of particles this update loop
         // so just give up :(
-        return;
+        break;
       }
       Particle* particle = &particles->particles[particle_id];
       particle->state = 1;
