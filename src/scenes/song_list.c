@@ -66,7 +66,7 @@ void song_list_on_start(void* game_data, void* song_list_data) {
   playdate->file->listfiles("songs", get_song, song_list_data, 0);
   
   song_list->map_select_range = playdate->system->getCrankAngle();
-  song_list->input_delay = game->time + 0.5f;
+  song_list->input_delay = game->time + 0.3f;
 }
 
 void song_list_on_update(void* game_data, void* song_list_data) {
@@ -147,32 +147,37 @@ void song_list_on_update(void* game_data, void* song_list_data) {
   if (song_list->map_select == 0) {
     playdate->graphics->drawText("Learn the rulez\n(this is temp i swer)", 40, kASCIIEncoding, 210, 50);
   } else {
-    char buffer[50];
-    snprintf(buffer, 50, "BPM: %d", (int)header->bpm);
-    playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 210, 50);
-    snprintf(buffer, 50, "Artist: %s", header->artist);
-    playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 210, 70);
+    playdate->graphics->setFont(game->font_cuberick);
+    char buffer[100];
+    char difficulty_buffer[10];
     switch (header->difficulty) {
       case 0:
-        playdate->graphics->drawText("Beginner", 50, kASCIIEncoding, 210, 90);
+        strcpy(difficulty_buffer, "Beginner");
         break;
       case 1:
-        playdate->graphics->drawText("Easy", 50, kASCIIEncoding, 210, 90);
+        strcpy(difficulty_buffer, "Easy");
         break;
       case 2:
-        playdate->graphics->drawText("Normal", 50, kASCIIEncoding, 210, 90);
+        strcpy(difficulty_buffer, "Normal");
         break;
       case 3:
-        playdate->graphics->drawText("Hard", 50, kASCIIEncoding, 210, 90);
+        strcpy(difficulty_buffer, "Hard");
         break;
       case 4:
-        playdate->graphics->drawText("Insane", 50, kASCIIEncoding, 210, 90);
+        strcpy(difficulty_buffer, "Insane");
         break;
     }
-    snprintf(buffer, 50, "HS: %d", header->highscore);
-    playdate->graphics->drawText(buffer, 20, kASCIIEncoding, 210, 110);
+    snprintf(buffer, 100,
+      "Artist:\n%s\n\nBPM: %d\nDifficulty: %s\nHighscore: %d",
+      header->artist,
+      (int)header->bpm,
+      difficulty_buffer,
+      header->highscore
+    );
+
+    playdate->graphics->drawText(buffer, 100, kASCIIEncoding, 210, 50);
   }
-  
+  playdate->graphics->setFont(game->font);  
 }
 
 void song_list_on_end(void* game_data, void* song_list_data) {

@@ -29,8 +29,10 @@ typedef struct GameData {
   LCDBitmap* black_x_bitmap;
   LCDBitmap* white_x_bitmap;
   LCDBitmap* clear_bitmap;
+  LCDBitmap* grey_bitmap;
   LCDFont* font;
   LCDFont* basic_font;
+  LCDFont* font_cuberick;
   SamplePlayer* sound_effect;
   RhythmPlayer* rhythmplayer;
   int song_count;

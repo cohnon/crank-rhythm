@@ -11,10 +11,6 @@ PlaydateAPI* playdate; // Global
 
 GameData data;
 
-// TODO: use a better font
-//       also, why is this up here?
-const char* fontpath = "/System/Fonts/Asheville-Sans-14-Bold.pft";
-
 void game_setup_pd(PlaydateAPI* pd) {
   playdate = pd;
 }
@@ -38,13 +34,15 @@ void game_init(void) {
   // Load Assets
   const char* err;
   const struct playdate_graphics* graphics = playdate->graphics;
-  data.font              = graphics->loadFont  (fontpath,            &err);
-  data.basic_font        = graphics->loadFont  ("fonts/Basic.pft",   &err);
-  data.title_bitmaps[0]  = graphics->loadBitmap("images/title1.png", &err);
-  data.title_bitmaps[1]  = graphics->loadBitmap("images/title2.png", &err);
+  data.font              = graphics->loadFont  ("/System/Fonts/Asheville-Sans-14-Bold.pft", &err);
+  data.basic_font        = graphics->loadFont  ("fonts/Basic.pft",          &err);
+  data.font_cuberick     = graphics->loadFont  ("fonts/Cuberick-Bold",      &err);
+  data.title_bitmaps[0]  = graphics->loadBitmap("images/title1.png",        &err);
+  data.title_bitmaps[1]  = graphics->loadBitmap("images/title2.png",        &err);
   data.black_x_bitmap    = graphics->loadBitmap("images/x.png",             &err);
   data.white_x_bitmap    = graphics->loadBitmap("images/white_x.png",       &err);
   data.clear_bitmap      = graphics->loadBitmap("images/clear.png",         &err);
+  data.grey_bitmap       = graphics->loadBitmap("images/grey.png",          &err);
   data.rhythmplayer      = rhythm_newPlayer();
   
   graphics->setFont(data.font);  

@@ -1,6 +1,7 @@
 #ifndef BEATMAP_H
 #define BEATMAP_H
 
+#include "particles.h"
 #include <stdint.h>
 
 #define BEATMAP_LOAD_FAIL 0
@@ -33,6 +34,7 @@ typedef struct Note {
   uint8_t extra_data; // just to fill out the padding why not
   float beat_time;
   float time;
+  emitter_id emitter;
 } Note;
 
 typedef struct Beatmap {

@@ -22,6 +22,8 @@ void draw_disk(const struct GameData* data, float pos_x, float pos_y, float angl
   // black
   playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, angle + 270.0f, angle + 360.0f, kColorBlack);
   playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, angle + 90.0f, angle + 180.0f, kColorBlack);
+  
+  playdate->graphics->drawEllipse(bounds_x + offset - 3, bounds_y + offset - 3, size + 6, size + 6, 1, 0.0f, 360.0f, kColorBlack);
 }
 
 void draw_note(const struct GameData* data, const float pos_x, const float pos_y, const uint8_t type, const uint8_t color) {
@@ -31,7 +33,8 @@ void draw_note(const struct GameData* data, const float pos_x, const float pos_y
     case NOTE_NORMAL: {
       int note_size = 14;
       if (color == NOTE_WHITE) {
-        graphics->drawEllipse(pos_x - (note_size >> 1), pos_y - (note_size >> 1), note_size, note_size, 1, 0.0f, 0.0f, kColorBlack);  
+        graphics->fillEllipse(pos_x - (note_size >> 1), pos_y - (note_size >> 1), note_size, note_size, 0.0f, 0.0f, kColorBlack);
+        graphics->fillEllipse(pos_x - (note_size >> 1) + 1, pos_y - (note_size >> 1) + 1, note_size - 2, note_size - 2, 0.0f, 0.0f, kColorWhite);
       } else {
         graphics->fillEllipse(pos_x - (note_size >> 1), pos_y - (note_size >> 1), note_size, note_size, 0.0f, 0.0f, kColorBlack);
       }
@@ -40,7 +43,8 @@ void draw_note(const struct GameData* data, const float pos_x, const float pos_y
     case NOTE_CLICK: {
       int note_size = 16;
       if (color == NOTE_WHITE) {
-        graphics->drawEllipse(pos_x - (note_size >> 1), pos_y - (note_size >> 1), note_size, note_size, 1, 0.0f, 0.0f, kColorBlack);
+        graphics->fillEllipse(pos_x - (note_size >> 1), pos_y - (note_size >> 1), note_size, note_size, 0.0f, 0.0f, kColorBlack);
+        graphics->fillEllipse(pos_x - (note_size >> 1) + 1, pos_y - (note_size >> 1) + 1, note_size - 2, note_size - 2, 0.0f, 0.0f, kColorWhite);
       } else {
         graphics->fillEllipse(pos_x - (note_size >> 1), pos_y - (note_size >> 1), note_size, note_size, 0.0f, 0.0f, kColorBlack);
       }

@@ -25,50 +25,50 @@ static int health_shake_index = 10;
 
 static int failed_to_load_song = 0;
 
-// TODO: make separate particle system
-//       these aren't even particles
-struct Particle {
-  uint16_t x;
-  uint16_t y;
-  uint32_t life;
-};
-
-int particle_start;
-int particle_end;
-struct Particle particles[10];
-int pulses[10];
-
 static void menu_home_callback(void* userdata) {
   GameData* game = (GameData*)userdata;
   scene_transition(game->scene_manager, game->song_list_scene);
 }
 
-static void particles_update() {
-  for (int i = particle_start; i != particle_end; i = (i + 1) % 10) {
-    particles[i].life += 1;
-    pulses[i] += 1;
-    if (particles[i].life > 15) {
-      particle_start += 1;
-      particle_start %= 10;
-    }
-  }
-}
+// TODO: make separate particle system
+//       these aren't even particles
+// struct Particle {
+//   uint16_t x;
+//   uint16_t y;
+//   uint32_t life;
+// };
 
-static void particles_draw(struct GameData* data) {
-  for (int i = particle_start; i != particle_end; i = (i + 1) % 10) {
-    // struct Particle* p = &particles[i];
-    // playdate->graphics->drawRect(p->x - p->life / 2, p->y - p->life / 2, p->life, p->life, kColorBlack);
-    // playdate->graphics->drawRect(p->x - p->life / 2 - 1, p->y - p->life / 2 - 1, p->life + 2, p->life + 2, kColorWhite);
-    playdate->graphics->drawEllipse(200 - 32 - pulses[i] / 2, 120 - 32 - pulses[i] / 2, 64 + pulses[i], 64 + pulses[i], 1, 0.0f, 0.0f, kColorBlack);
-  }
-}
+// int particle_start;
+// int particle_end;
+// struct Particle particles[10];
+// int pulses[10];
 
-static void particles_make(uint16_t x, uint16_t y) {
-  particles[particle_end] = (struct Particle){ x, y, 0 };
-  pulses[particle_end] = 0;
-  particle_end += 1;
-  particle_end %= 10; 
-}
+// static void disk_particles_update() {
+//   for (int i = particle_start; i != particle_end; i = (i + 1) % 10) {
+//     particles[i].life += 1;
+//     pulses[i] += 1;
+//     if (particles[i].life > 15) {
+//       particle_start += 1;
+//       particle_start %= 10;
+//     }
+//   }
+// }
+
+// static void particles_draw(struct GameData* data) {
+//   for (int i = particle_start; i != particle_end; i = (i + 1) % 10) {
+//     // struct Particle* p = &particles[i];
+//     // playdate->graphics->drawRect(p->x - p->life / 2, p->y - p->life / 2, p->life, p->life, kColorBlack);
+//     // playdate->graphics->drawRect(p->x - p->life / 2 - 1, p->y - p->life / 2 - 1, p->life + 2, p->life + 2, kColorWhite);
+//     playdate->graphics->drawEllipse(200 - 32 - pulses[i] / 2, 120 - 32 - pulses[i] / 2, 64 + pulses[i], 64 + pulses[i], 1, 0.0f, 0.0f, kColorBlack);
+//   }
+// }
+
+// static void particles_make(uint16_t x, uint16_t y) {
+//   particles[particle_end] = (struct Particle){ x, y, 0 };
+//   pulses[particle_end] = 0;
+//   particle_end += 1;
+//   particle_end %= 10; 
+// }
 
 static float lerp(float x1, float x2, float t) {
   // return x1 + t * (x2 - x1);
@@ -182,6 +182,25 @@ void song_on_start(void* game_data, void* song_data) {
   SongData* song = (SongData*)song_data;
   
   song->quit_menu_item = playdate->system->addMenuItem("Quit Song", menu_home_callback, game_data);
+  
+  song->note_particles = particles_newSystem((ParticleConfig){
+    .max_emitters = 15,
+    .particle_start_velocity = 0.5f,
+    .particle_end_velocity = 0.1f,
+    .particle_start_size = 3.0f,
+    .particle_end_size = 1.0f,
+  });
+  
+  song->hit_particles = particles_newSystem((ParticleConfig){
+    .max_particles = 20,
+    .max_emitters = 2,
+    .emit_rate = 50.0f,
+    .emit_lifetime = 0.2f,
+    .particle_start_velocity = 0.7f,
+    .particle_end_velocity = 0.1f,
+    .particle_start_size = 10.0f,
+    .particle_end_size = 1.0f,
+  });
 
   song->health = MAX_HEALTH;
   song->display_score = 0;
@@ -191,6 +210,10 @@ void song_on_start(void* game_data, void* song_data) {
     song->health = 0;
     failed_to_load_song = 1;
     return;
+  }
+  
+  for (int i = 0; i < song->beatmap.notes_length; ++i) {
+    song->beatmap.notes[i].emitter = -1;
   }
 
   song->rhythmplayer = rhythm_newPlayer();
@@ -231,7 +254,7 @@ void song_on_update(void* game_data, void* song_data) {
     }
   }
   
-  particles_update();
+  // disk_particles_update();
 
   struct Note* note;
   for (int i = song->index; i < song->beatmap.notes_length; ++i) {
@@ -240,9 +263,16 @@ void song_on_update(void* game_data, void* song_data) {
       break;
     }
     
+    if (note->emitter == -1) {
+      note->emitter = particles_createEmitter(song->note_particles);
+      particles_startEmitter(song->note_particles, note->emitter);
+    }
+        
     if (note->type == NOTE_CLICK) {
       // too late
       if (note->time + 0.11f < time) {
+        particles_destroyEmitter(song->note_particles, note->emitter);
+        note->emitter = -1;
         song->miss_count += 1;
         song->index += 1;
         song->health -= 15;
@@ -260,6 +290,8 @@ void song_on_update(void* game_data, void* song_data) {
         
         // inside clickable range
         if (diff_2 < 0.11f * 0.11f && note->color == angle_to_color(playdate->system->getCrankAngle(), note_position_to_angle(note->position))) {
+          particles_destroyEmitter(song->note_particles, note->emitter);
+          note->emitter = -1;
           song->index += 1;
           song->health += 5;
           prompt_show = 1;
@@ -268,7 +300,10 @@ void song_on_update(void* game_data, void* song_data) {
           float progress = 1.0f - ((note->beat_time * 60.0f / song->beatmap.bpm) - time) / song->beatmap.bpm;
           int x, y;
           get_note_position(note->position, progress, &x, &y);
-          particles_make(x, y);
+          emitter_id id = particles_createEmitter(song->hit_particles);
+          particles_moveEmitter(song->hit_particles, id, x, y);
+          particles_startEmitter(song->hit_particles, id);
+          // particles_make(x, y);
           if (diff_2 < 0.045f * 0.045f) {
             song->perfect_count += 1;
             song->score += 100;
@@ -287,12 +322,14 @@ void song_on_update(void* game_data, void* song_data) {
     } else if (note->type == NOTE_NORMAL) {
       if (note->time < time) {
         song->index += 1;
+        particles_destroyEmitter(song->note_particles, note->emitter);
+        note->emitter = -1;
         float note_angle = note_position_to_angle(note->position);    
         if (note->color == angle_to_color(playdate->system->getCrankAngle(), note_angle)) {
           float progress = 1.0f - ((note->beat_time * 60.0f / song->beatmap.bpm) - time) / SIGHTREAD_DISTANCE;
           int x, y;
           get_note_position(note->position, progress, &x, &y);
-          particles_make(x, y);
+          // particles_make(x, y);
           song->score += 50;
           song->health += 3;
           song->combo += 1;
@@ -307,6 +344,8 @@ void song_on_update(void* game_data, void* song_data) {
     } else if (note->type == NOTE_DANGER) {
       if (note->time < time) {
         song->index += 1;
+        particles_destroyEmitter(song->note_particles, note->emitter);
+        note->emitter = -1;
         float note_angle = note_position_to_angle(note->position);
         if (note->color == angle_to_color(playdate->system->getCrankAngle(), note_angle)) {
           song->health -= 20;
@@ -348,6 +387,9 @@ void song_on_update(void* game_data, void* song_data) {
     return;
   }
   
+  particles_update(song->note_particles);
+  particles_update(song->hit_particles);
+
   int x, y;
   float note_progress;
   for (int i = song->index; i < song->beatmap.notes_length; ++i) {
@@ -361,13 +403,35 @@ void song_on_update(void* game_data, void* song_data) {
     note_progress = 1.0f - ((note->beat_time / song->beatmap.bpm * 60.0f) - time) / SIGHTREAD_DISTANCE;
     get_note_position(note->position, note_progress, &x, &y);
     
+    particles_moveEmitter(song->note_particles, note->emitter, x, y);
+    
     draw_note(game, x, y, note->type, note->color);
-  }
+  }  
 
-  playdate->system->getButtonState(&pressed, NULL, NULL);  
+  playdate->system->getButtonState(&pressed, NULL, NULL);
+  playdate->graphics->setStencilImage(game->grey_bitmap, 1);
+  static int size = 0;
+  if (song->index > 0) { 
+    if (rhythm_isOnBeat(song->rhythmplayer, 0.2f)) {
+      size += 15;
+      if (size > 100) {
+        size = 100;
+      }
+    } else {
+      size -= 1;
+      if (size < 75) {
+        size = 75;
+      }
+    }
+  } else {
+    size = 70;
+  }
+  playdate->graphics->fillEllipse(200 - (size >> 1), 120 - (size >> 1), size, size, 0.0f, 0.0f, kColorBlack);
+  playdate->graphics->setStencilImage(game->clear_bitmap, 1);
   draw_disk(game, 200, 120, playdate->system->getCrankAngle(), pressed > 0);
   
-  particles_draw(game);
+  // old particles
+  // particles_draw(game);
   
   // UI
   // --

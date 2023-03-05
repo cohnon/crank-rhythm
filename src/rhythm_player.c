@@ -145,9 +145,7 @@ float rhythm_getProgress(RhythmPlayer* rhythm) {
 }
 
 int rhythm_isOnBeat(RhythmPlayer* rhythm, float threshold) {
-  float beat_time = rhythm_getBeatTime(rhythm) - threshold / 2.0f;
-  if (beat_time < 0.0f) {
-    return (-beat_time - (int)(-beat_time) > 1.0f - threshold);
-  }
+  float beat_time = rhythm_getBeatTime(rhythm) + (threshold / 2.0f);
+  
   return (beat_time - (int)beat_time) < threshold;
 }

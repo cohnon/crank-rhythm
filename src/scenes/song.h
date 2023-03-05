@@ -1,6 +1,7 @@
 #ifndef SONGSCENE_H
 #define SONGSCENE_H
 
+#include "../particles.h"
 #include "../beatmap.h"
 #include "../rhythm_player.h"
 #include <stdint.h>
@@ -36,6 +37,8 @@ typedef struct SongData {
   float countdown_timer;
   RhythmPlayer* rhythmplayer;
   PDMenuItem* quit_menu_item;
+  ParticleSystem* note_particles;
+  ParticleSystem* hit_particles;
   int finished;
 
   int index;
@@ -52,7 +55,6 @@ typedef struct SongData {
   int normal_miss;
   int combo;
   float accuracy;
-
 } SongData;
 
 void song_on_start(void* game_data, void* song_data);

@@ -32,7 +32,7 @@ void menu_on_start(void* game_data, void* menu_data) {
   
   rhythm_load(game->rhythmplayer, "audio/menu", 175.0f, 0.0f);
   rhythm_play(game->rhythmplayer, 0);
-  
+    
   menu->progress = 0.0f;
   menu->progress_synth = playdate->sound->synth->newSynth();
   playdate->sound->synth->setWaveform(menu->progress_synth, kWaveformSawtooth);
@@ -57,7 +57,7 @@ void menu_on_start(void* game_data, void* menu_data) {
 void menu_on_update(void* game_data, void* menu_data) {
   GameData* game = (GameData*)game_data;
   MenuData* menu = (MenuData*)menu_data;
-
+  
   PDButtons buttons;
   playdate->system->getButtonState(NULL, &buttons, NULL);
   
@@ -85,6 +85,7 @@ void menu_on_update(void* game_data, void* menu_data) {
 
   // drawing
   playdate->graphics->clear(kColorWhite);
+
   for (int i = 0; i < 15; ++i) {
     MenuNote* note = &menu->bg_notes[i];
     note->x = (note->x + ((float)RNG_Y[note->y] / 80.0f) + 1.5f);
@@ -113,8 +114,8 @@ void menu_on_update(void* game_data, void* menu_data) {
   
   // Loading bar
   int size = (int)(menu->progress * (width + 6));
-  playdate->graphics->fillRect(200 - (width >> 1) - 3, top - 2, size, height + 4, kColorXOR);
-  
+  playdate->graphics->fillRect(200 - (width >> 1) - 3, top - 2, size, height + 4, kColorXOR);  
+
   // Fake waveform (this is pretty messy rn)
   playdate->graphics->setStencilImage(menu->waveform_bitmap, 1);
   int bar_width = (400 - width - 4) / 10;
@@ -152,5 +153,5 @@ void menu_on_end(void* game_data, void* menu_data) {
   
   playdate->sound->synth->freeSynth(menu->progress_synth);
   
-  playdate->graphics->freeBitmap(menu->waveform_bitmap);
+  playdate->graphics->freeBitmap(menu->waveform_bitmap);  
 }
