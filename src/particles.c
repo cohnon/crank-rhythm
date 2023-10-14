@@ -32,7 +32,7 @@ static const float RNG_DIRECTION[RNG_DIRECTION_LENGTH * 2] = {
   -0.9342965888382285, -0.35649668173105115,-0.8023379374672804, 0.5968700311631924, 
 };
 
-PlaydateAPI* playdate;
+extern PlaydateAPI* playdate;
 
 typedef struct Particle {
   int state;
@@ -69,10 +69,6 @@ typedef struct ParticleSystem {
   emitter_id* emitters_free;
   uint8_t emitters_free_length;
 } ParticleSystem;
-
-void particles_set_pd_ptr(PlaydateAPI* pd) {
-  playdate = pd;
-}
 
 // Creates a new particle system.
 // You are responsible for freeing it with 'particles_freeSystem'

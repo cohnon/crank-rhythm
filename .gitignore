@@ -5,3 +5,7 @@ sim/
 compile_commands.json
 .cache/
 .DS_Store
+Source/pdex.bin
+Source/pdex.dll
+Source/pdex.so
+Source/pdex.dylib

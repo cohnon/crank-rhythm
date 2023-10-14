@@ -59,8 +59,6 @@ typedef struct ParticleConfig {
 } ParticleConfig;
 
 
-void particles_set_pd_ptr(PlaydateAPI* pd);
-
 // Creates a new particle system.
 // You are responsible for freeing it with 'particles_freeSystem'
 ParticleSystem* particles_newSystem(const ParticleConfig config);
