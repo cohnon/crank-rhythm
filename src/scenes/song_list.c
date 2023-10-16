@@ -51,7 +51,7 @@ static void move_selector(GameData* game, SongListData* song_list, int direction
     BeatmapHeader* header = &song_list->song_headers[song_list->map_select];
     rhythm_load(game->rhythmplayer, header->audio_path, header->bpm, header->offset);
     playdate->sound->fileplayer->setVolume(fileplayer, 0.0f, 0.0f);
-    playdate->sound->fileplayer->fadeVolume(fileplayer, 1.0f, 1.0f, 2 * 44100, NULL);
+    playdate->sound->fileplayer->fadeVolume(fileplayer, 0.6f, 0.6f, 2 * 44100, NULL);
     rhythm_playOffset(game->rhythmplayer, 60.0f, 0);
   }
 }

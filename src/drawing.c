@@ -5,7 +5,7 @@
 #include "pd_api/pd_api_gfx.h"
 
 #define DISK_SIZE 64
-#define DISK_SIZE_MAX 74
+#define DISK_SIZE_MAX 70
 
 void draw_disk(const struct GameData* data, float pos_x, float pos_y, float angle, int big) {  
   int size = DISK_SIZE + big * (DISK_SIZE_MAX - DISK_SIZE);
@@ -14,16 +14,20 @@ void draw_disk(const struct GameData* data, float pos_x, float pos_y, float angl
   int bounds_x = pos_x - (DISK_SIZE_MAX >> 1);
   int bounds_y = pos_y - (DISK_SIZE_MAX >> 1);
 
+  // fill with white
   playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, 0.0f, 0.0f, kColorWhite);
 
-  // white
-  playdate->graphics->drawEllipse(bounds_x + offset, bounds_y + offset, size, size, 2, angle + 0.0f, angle + 90.0f, kColorBlack);
-  playdate->graphics->drawEllipse(bounds_x + offset, bounds_y + offset, size, size, 2, angle + 180.0f, angle + 270.0f, kColorBlack);
-  // black
-  playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, angle + 270.0f, angle + 360.0f, kColorBlack);
-  playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, angle + 90.0f, angle + 180.0f, kColorBlack);
-  
-  playdate->graphics->drawEllipse(bounds_x + offset - 3, bounds_y + offset - 3, size + 6, size + 6, 1, 0.0f, 360.0f, kColorBlack);
+  // black slices
+  playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, angle + 300.0f, angle + 360.0f, kColorBlack);
+  playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, angle + 180.0f, angle + 240.0f, kColorBlack);
+  playdate->graphics->fillEllipse(bounds_x + offset, bounds_y + offset, size, size, angle + 60.0f, angle + 120.0f, kColorBlack);
+
+  // center
+  playdate->graphics->fillEllipse(200 - 20, 120 - 20, 40, 40, 0.0f, 0.0f, kColorBlack);
+  playdate->graphics->drawEllipse(200 - 20, 120 - 20, 40, 40, 1, 0.0f, 360.0f, kColorWhite);
+
+  // outline
+  playdate->graphics->drawEllipse(bounds_x + offset, bounds_y + offset, size, size, 1, 0.0f, 360.0f, kColorBlack);
 }
 
 void draw_note(const struct GameData* data, const float pos_x, const float pos_y, const uint8_t type, const uint8_t color) {

@@ -24,7 +24,7 @@ void rhythm_set_pd_ptr(PlaydateAPI* pd) {
   playdate = pd;
 }
 
-RhythmPlayer* rhythm_newPlayer() {
+RhythmPlayer* rhythm_newPlayer(void) {
   RhythmPlayer* rhythm = (RhythmPlayer*)playdate->system->realloc(NULL, sizeof(RhythmPlayer));
 
   rhythm->fileplayer = playdate->sound->fileplayer->newPlayer();
@@ -69,6 +69,7 @@ void rhythm_play(RhythmPlayer* rhythm, const int count) {
   }
 
   playdate->sound->fileplayer->play(rhythm->fileplayer, count);
+  playdate->sound->fileplayer->setVolume(rhythm->fileplayer, 0.6f, 0.6f);
   rhythm->audio_start = playdate->sound->getCurrentTime();
   rhythm->is_started = 1;
   rhythm->is_playing = 1;

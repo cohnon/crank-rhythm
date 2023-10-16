@@ -127,23 +127,36 @@ static void get_note_position(int position, float progress, int* x, int* y) {
 static float note_position_to_angle(int position) {  
   float note_angle;
   switch (position) {
+    // left
     case NOTE_POS_L1:
+      note_angle = 225.0f + (4.0f * 32.5f);
+      break;
+    case NOTE_POS_L2:
+      note_angle = 225.0f + (3.0f * 22.5f);
+      break;
+    case NOTE_POS_L3:
+      note_angle = 225.0f + (2.0f * 22.5f);
+      break;
+    case NOTE_POS_L4:
+      note_angle = 225.0f + 22.5f;
+      break;
+    case NOTE_POS_L5:
+      note_angle = 225.0f;
+      break;
+
+    // right
     case NOTE_POS_R5:
       note_angle = 135.0f;
       break;
-    case NOTE_POS_L2:
     case NOTE_POS_R4:
       note_angle = 112.5f;
       break;
-    case NOTE_POS_L3:
     case NOTE_POS_R3:
       note_angle = 90.0f;
       break;
-    case NOTE_POS_L4:
     case NOTE_POS_R2:
       note_angle = 67.5f;
       break;
-    case NOTE_POS_L5:
     case NOTE_POS_R1:
       note_angle = 45.0f;
       break;
@@ -155,22 +168,10 @@ static float note_position_to_angle(int position) {
 }
 
 static int angle_to_color(float crank_angle, float note_angle) {    
-  // since disk is rotationally symmetrical, we can clamp it to 180 degrees
-  float lower_angle = crank_angle;
-  if (lower_angle > 180.0f) {
-    lower_angle -= 180.0f;
-  }
-  
-  float crank_dist = note_angle - lower_angle;
-  
-  // modulus
-  if (crank_dist < 0) {
-    crank_dist += 180.0f;
-  } else if (crank_dist > 180.0f) {
-    crank_dist -= 180.0f;
-  }
-  
-  if (crank_dist < 90.0f) {
+  // since disk is rotationally symmetrical, we can clamp it to 120 degrees 
+  // get note angle relative to the local rotation of the disk
+  int local_rot = ((int)note_angle - (int)crank_angle + 360) % 120;
+  if (local_rot < 60) {
     return NOTE_WHITE;
   } else {
     return NOTE_BLACK;
@@ -326,7 +327,7 @@ void song_on_update(void* game_data, void* song_data) {
         song->index += 1;
         particles_destroyEmitter(song->note_particles, note->emitter);
         note->emitter = -1;
-        float note_angle = note_position_to_angle(note->position);    
+        float note_angle = note_position_to_angle(note->position);
         if (note->color == angle_to_color(playdate->system->getCrankAngle(), note_angle)) {
           float progress = 1.0f - ((note->beat_time * 60.0f / song->beatmap.bpm) - time) / SIGHTREAD_DISTANCE;
           int x, y;

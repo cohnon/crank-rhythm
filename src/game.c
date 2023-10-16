@@ -45,7 +45,7 @@ void game_init(void) {
   data.grey_bitmap       = graphics->loadBitmap("images/grey.png",          &err);
   data.rhythmplayer      = rhythm_newPlayer();
   
-  graphics->setFont(data.font);  
+  graphics->setFont(data.font);
   
   // Setup Scenes
   data.scene_manager   = scene_new(&data);
