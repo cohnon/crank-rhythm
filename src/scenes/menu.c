@@ -133,44 +133,13 @@ void menu_on_update(void* game_data, void* menu_data) {
   playdate->graphics->drawText("CRANK TO START", 16, kASCIIEncoding, left, top);
   
   playdate->graphics->setFont(game->font_cuberick);
-  playdate->graphics->drawText("v0.0.4", 7, kASCIIEncoding, 400 - 1 - playdate->graphics->getTextWidth(game->font_cuberick, "v0.0.4", 7, kASCIIEncoding, 0), 1);
+  playdate->graphics->drawText("v0.0.5", 7, kASCIIEncoding, 400 - 1 - playdate->graphics->getTextWidth(game->font_cuberick, "v0.0.4", 7, kASCIIEncoding, 0), 1);
   
   playdate->graphics->setFont(game->font);
 
   // Loading bar
   int size = (int)(menu->progress * (width + 6));
-  playdate->graphics->fillRect(200 - (width >> 1) - 3, top - 2, size, height + 4, kColorXOR);  
-
-  // Fake waveform (this is pretty messy rn)
-  // playdate->graphics->setStencilImage(menu->waveform_bitmap, 1);
-  // int bar_width = (400 - width - 4) / 10;
-  // for (int i = 0; i < 10; ++i) {
-  //   int x = i * bar_width;
-  //   if (i > 4) {
-  //     x += width + 9;
-  //   }
-
-  //   if (!on_beat) {
-  //     menu->waveform[i] -= 3.0f;
-  //     if (menu->waveform[i] < 0.0f) {
-  //       menu->waveform[i] = 0.0f;
-  //     }
-  //   } else {
-  //     if (i == 0) {
-  //       menu->waveform_counter += 1;
-  //     }
-  //     menu->waveform_counter += 1;
-  //     menu->waveform[i] += (float)(WAVEFORMS[(menu->waveform_counter % WAVEFORMS_LENGTH) * 10 + i]) * 8.0f;
-  //     if (menu->waveform[i] > 40.0f) {
-  //       menu->waveform[i] = 40.0f;
-  //     }
-  //   }
-  //   int bar_height = (int)menu->waveform[i];
-  //   bar_height /= 5;
-  //   bar_height *= 8;
-  //   playdate->graphics->fillRect(x + 1, 200 + (40 - bar_height), bar_width - 2, bar_height, kColorBlack);
-  // }
-  // playdate->graphics->setStencilImage(game->clear_bitmap, 1);
+  playdate->graphics->fillRect(200 - (width >> 1) - 3, top - 2, size, height + 4, kColorXOR);
 }
 
 void menu_on_end(void* game_data, void* menu_data) {

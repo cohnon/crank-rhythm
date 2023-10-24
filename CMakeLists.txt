@@ -27,8 +27,8 @@ set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
 set(CMAKE_XCODE_GENERATE_SCHEME TRUE)
 
 # Game Name Customization
-set(PLAYDATE_GAME_NAME 4tune)
-set(PLAYDATE_GAME_DEVICE 4tune_DEVICE)
+set(PLAYDATE_GAME_NAME crank_rhythm)
+set(PLAYDATE_GAME_DEVICE crank_rhythm_DEVICE)
 
 project(${PLAYDATE_GAME_NAME} C ASM)
 

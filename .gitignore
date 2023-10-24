@@ -1,11 +1,9 @@
-4tune.pdx/
+crank_rhythm.pdx/
+crank_rhythm.pdx.zip
 build/
 build_device/
 sim/
 compile_commands.json
 .cache/
 .DS_Store
-Source/pdex.bin
-Source/pdex.dll
-Source/pdex.so
-Source/pdex.dylib
+Source/pdex.*

@@ -2,6 +2,6 @@ name=4Tune
 author=Coherent Nonsense
 description=A spinny rhythm game
 bundleID=com.cohnon.4tune
-version=0.0.3
+version=0.0.5
 imagePath=card
 launchSoundPath=card/launch
