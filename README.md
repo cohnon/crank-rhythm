@@ -1,4 +1,4 @@
-# 4tune
+# Crank Rhythm
 
 A rhythm game for the Playdate Console.
 
